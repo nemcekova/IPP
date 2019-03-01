@@ -1,0 +1,14 @@
+.IPPcode19
+DEFVAR GF@counter
+CREATEFRAME vhbshkd
+MOVE  GF@counter string@ 
+#Jednoduchá iterace, dokud nebude splněna zadaná podmínka
+LABEL while
+JUMPIFEQ end @counter string@aaa
+WRITE string@counter \032 obsahuje \032
+WRITE GF@counter
+WRITE string@ \010
+CONCAT GF@_counter GF@counter string@a
+JUMP while
+LABEL end
+
