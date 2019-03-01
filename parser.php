@@ -80,8 +80,22 @@ function type($string2match){
 
 function parse($lineString){
     
-    $word = preg_split("/[\s]+/", $lineString);
-    $keyWord = $word[0];
+    if (preg_match('/#/', $lineString, $match)) {
+        
+        $cutString = substr($lineString,0, strpos($lineString, "#"));
+        if (strpos($lineString, "#") == 0) {
+            return;
+        }
+        else {
+            $word = preg_split("/[\s]+/", $cutString);
+            $keyWord = $word[0];
+            }
+    }
+    else {
+        $word = preg_split("/[\s]+/", $lineString);
+        $keyWord = $word[0];
+    }
+    
     
     switch ($keyWord) {
         case "MOVE":
@@ -327,7 +341,7 @@ function parse($lineString){
         
         
         default:
-            echo "Not instruction\n";
+            echo "DEFAULT: Not instruction\n";
             break;
     }
     
