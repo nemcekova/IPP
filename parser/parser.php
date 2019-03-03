@@ -10,6 +10,7 @@ $stdin = fopen('php://stdin', 'r');
 $counter = 0;
 $order = 1;
 while($Line = fgets($stdin)){
+    $comment = false;
     if ($counter == 0) {
         //if (strcmp($Line, ".IPPcode19\n") != 0) {
         $Line = strtoupper($Line);
@@ -30,13 +31,15 @@ while($Line = fgets($stdin)){
     }
     else {
         
+        
         //looks for comment and cuts it off
         if (preg_match('/#/', $Line, $match)) {
             
             $cutString = substr($Line,0, strpos($Line, "#"));
-            //if the posittion of # is 0 the return -> comment at the beginning of the line
+            //if the posittion of # is 0 -> comment at the beginning of the line
+            
             if (strpos($Line, "#") == 0) {
-                return;
+                $comment = true;
             }
             else {
                 $word = preg_split("/[\s]+/", $cutString);
@@ -49,14 +52,17 @@ while($Line = fgets($stdin)){
             $keyWord =strtoupper($word[0]);
         }
         
-        parse($word); //, $word[1], $word[2], $word[3], $word[4]
+        $offset = count($word) -1;
+        parse($word, $offset);
+        
+        if ($comment == false){
         
         $inst_element = $xml->createElement("instruction");
-        $inst_element->setAttribute("oreder", $order);
+        $inst_element->setAttribute("order", $order);
         $inst_element->setAttribute("opcode", $keyWord);
         $program_element->appendChild($inst_element);
 
-        if ($word[1]){
+        if ($offset > 1){
             if(preg_match('/@/', $word[1], $match)){
                 $cutType = substr($word[1],0, strpos($word[1], "@"));
                 $value = substr($word[1],strpos($word[1], "@")+1);
@@ -124,7 +130,7 @@ while($Line = fgets($stdin)){
         }
         
         
-        if ($word[2]){
+        if ($offset > 2){
             if(preg_match('/@/', $word[2], $match)){
                 $cutType = substr($word[2],0, strpos($word[2], "@"));
                 $value = substr($word[2],strpos($word[2], "@")+1);
@@ -191,7 +197,7 @@ while($Line = fgets($stdin)){
             }
         }
         
-        if ($word[3]){
+        if ($offset > 3){
             if(preg_match('/@/', $word[3], $match)){
                 $cutType = substr($word[3],0, strpos($word[3], "@"));
                 $value = substr($word[3],strpos($word[3], "@")+1);
@@ -257,24 +263,29 @@ while($Line = fgets($stdin)){
                 }
             }
         }
+    }
         
-        
-        
+        else {
+            
+        }
         
         $order++;
+        
     }
     }
     $xml->formatOutput = TRUE;
     echo $xml->saveXML();
+    
 fclose($stdin);
 
 
 function variable($string2match){
     if(preg_match('/(LF|TF|GF)@[a-zA-Z0-9\_\-\$\&\%\*\!\?]+/', $string2match, $match)){
-        echo"hura match var \n";
+        //echo"hura match var \n";
+        return;
     }
     else {
-        echo "fnuk var \n";
+        //echo "fnuk var \n";
         exit;
     }
 }
@@ -283,10 +294,11 @@ function variable($string2match){
 */
 function symb($string2match){
     if(preg_match('/(LF|TF|GF|string|int|bool|nil)@[a-zA-Z0-9\_\-\$\&\%\*\!\?]*/', $string2match, $match)){
-        echo"hura match sym \n";
+        //echo"hura match sym \n";
+        return;
     }
     else {
-        echo "fnuk sym \n";
+        //echo "fnuk sym \n";
         exit;
     }
 }
@@ -300,10 +312,11 @@ function label($string2match){
     }
     else {
         if(preg_match('/[a-zA-Z0-9\_\-\$\&\%\*\!\?]+/', $string2match, $match)){
-            echo"hura match label \n";
+            //echo"hura match label \n";
+            return;
         }
         else {
-            echo "fnuk label \n";
+            //echo "fnuk label \n";
             exit;
         }
 }
@@ -312,14 +325,9 @@ function label($string2match){
 /*
 *checks if the number of args is correct
 */
-function manyArg($string2match){
-    if ($string2match) {
+function manyArg(){
         echo "Error: Too many arg for this instruction!!\n";
         exit;
-    }
-    else {
-        echo "Vsetko ok \n";
-    }
 }
 
 /*
@@ -327,17 +335,19 @@ function manyArg($string2match){
 */
 function type($string2match){
     if (preg_match('/(string|int|bool)/', $string2match, $match)) {
-        echo"hura match type\n";
+        //echo"hura match type\n";
+        return;
     }
     else {
-        echo "fnuk type\n";
+        //echo "fnuk type\n";
         exit;
     }
 }
 
 
-function parse($word){
+function parse($word, $offset){
     $keyWord = $word[0];
+
     
     
     
@@ -345,51 +355,69 @@ function parse($word){
         case "MOVE":
             variable($word[1]);
             symb($word[2]);
-            manyArg($word[3]);
+            if ($offset > 3){
+                manyArg();
+            }
             break;
             
-            
+          
         case "CREATEFRAME":
-            manyArg($word[1]);
+            if ($offset > 1){
+                manyArg();
+            }
             break;
             
             
         case "PUSHFRAME":
-            manyArg($word[1]);
+            if ($offset > 1){
+                manyArg();
+            }
             break;
             
             
         case "POPFRAME":
-            manyArg($word[1]);
+            if ($offset > 1){
+                manyArg();
+            }
             break;
             
            
         case "DEFVAR":
             variable($word[1]);
-            manyArg($word[2]);
+            if ($offset > 2){
+                manyArg();
+            }
             break;
             
             
         case "CALL":
             label($word[1]);
-            manyArg($word[2]);
+            if ($offset > 2){
+                manyArg();
+            }
             break;
             
             
         case "RETURN":
-            manyArg($word[1]);
+            if ($offset > 1){
+                manyArg();
+            }
             break;
             
             
         case "PUSHS":
             symb($word[1]);
-            manyArg($word[2]);
+            if ($offset > 2){
+                manyArg();
+            }
             break;
             
             
         case "POPS":
             variable($word[1]);
-            manyArg($word[2]);
+            if ($offset > 2){
+                manyArg();
+            }
             break;
             
             
@@ -397,7 +425,9 @@ function parse($word){
             variable($word[1]);
             symb($word[2]);
             symb($word[3]);
-            manyArg($word[4]);
+            if ($offset > 4){
+                manyArg();
+            }
             break;
             
             
@@ -405,7 +435,9 @@ function parse($word){
             variable($word[1]);
             symb($word[2]);
             symb($word[3]);
-            manyArg($word[4]);
+            if ($offset > 4){
+                manyArg();
+            }
             break;
             
             
@@ -413,7 +445,9 @@ function parse($word){
             variable($word[1]);
             symb($word[2]);
             symb($word[3]);
-            manyArg($word[4]);
+            if ($offset > 4){
+                manyArg();
+            }
             break;
             
             
@@ -421,7 +455,9 @@ function parse($word){
             variable($word[1]);
             symb($word[2]);
             symb($word[3]);
-            manyArg($word[4]);
+            if ($offset > 4){
+                manyArg();
+            }
             break;
             
             
@@ -429,7 +465,9 @@ function parse($word){
             variable($word[1]);
             symb($word[2]);
             symb($word[3]);
-            manyArg($word[4]);
+            if ($offset > 4){
+                manyArg();
+            }
             break;
             
             
@@ -437,7 +475,9 @@ function parse($word){
             variable($word[1]);
             symb($word[2]);
             symb($word[3]);
-            manyArg($word[4]);
+            if ($offset > 4){
+                manyArg();
+            }
             break;
             
             
@@ -445,7 +485,9 @@ function parse($word){
             variable($word[1]);
             symb($word[2]);
             symb($word[3]);
-            manyArg($word[4]);
+            if ($offset > 4){
+                manyArg();
+            }
             break;
             
             
@@ -453,7 +495,9 @@ function parse($word){
             variable($word[1]);
             symb($word[2]);
             symb($word[3]);
-            manyArg($word[4]);
+            if ($offset > 4){
+                manyArg();
+            }
             break;
             
             
@@ -461,7 +505,9 @@ function parse($word){
             variable($word[1]);
             symb($word[2]);
             symb($word[3]);
-            manyArg($word[4]);
+            if ($offset > 4){
+                manyArg();
+            }
             break;
             
             
@@ -469,14 +515,18 @@ function parse($word){
             variable($word[1]);
             symb($word[2]);
             symb($word[3]);
-            manyArg($word[4]);
+            if ($offset > 4){
+                manyArg();
+            }
             break;
             
             
         case "INT2CHAR":
             variable($word[1]);
             symb($word[2]);
-            manyArg($word[3]);
+            if ($offset > 3){
+                manyArg();
+            }
             break;
             
             
@@ -484,20 +534,26 @@ function parse($word){
             variable($word[1]);
             symb($word[2]);
             symb($word[3]);
-            manyArg($word[4]);
+            if ($offset > 4){
+                manyArg();
+            }
             break;
             
             
         case "READ":
             variable($word[1]);
             type($word[2]);
-            manyArg($word[3]);
+            if ($offset > 3){
+                manyArg();
+            }
             break;
             
             
         case "WRITE":
         symb($word[1]);
-        manyArg($word[2]);
+        if ($offset > 2){
+            manyArg();
+        }
             break;
             
             
@@ -505,14 +561,18 @@ function parse($word){
             variable($word[1]);
             symb($word[2]);
             symb($word[3]);
-            manyArg($word[4]);
+            if ($offset > 4){
+                manyArg();
+            }
             break;
             
             
         case "STRLEN":
             variable($word[1]);
             symb($word[2]);
-            manyArg($word[3]);
+            if ($offset > 3){
+                manyArg();
+            }
             break;
             
             
@@ -520,7 +580,9 @@ function parse($word){
             variable($word[1]);
             symb($word[2]);
             symb($word[3]);
-            manyArg($word[4]);
+            if ($offset > 4){
+                manyArg();
+            }
             break;
             
             
@@ -528,26 +590,34 @@ function parse($word){
             variable($word[1]);
             symb($word[2]);
             symb($word[3]);
-            manyArg($word[4]);
+            if ($offset > 4){
+                manyArg();
+            }
             break;
             
             
         case "TYPE":
             variable($word[1]);
             symb($word[2]);
-            manyArg($word[3]);
+            if ($offset > 3){
+                manyArg();
+            }
             break;
             
             
         case "LABEL":
             label($word[1]);
-            manyArg($word[2]);
+            if ($offset > 2){
+                manyArg();
+            }
             break;
             
             
         case "JUMP":
             label($word[1]);
-            manyArg($word[2]);
+            if ($offset > 2){
+                manyArg();
+            }
             break;
             
             
@@ -555,7 +625,9 @@ function parse($word){
             label($word[1]);
             symb($word[2]);
             symb($word[3]);
-            manyArg($word[4]);
+            if ($offset > 4){
+                manyArg();
+            }
             break;
             
             
@@ -563,24 +635,32 @@ function parse($word){
             label($word[1]);
             symb($word[2]);
             symb($word[3]);
-            manyArg($word[4]);
+            if ($offset > 4){
+                manyArg();
+            }
             break;
             
             
         case "EXIT":
-        symb($word[1]);
-        manyArg($word[2]);
+            symb($word[1]);
+            if ($offset > 2){
+                manyArg();
+            }
             break;
             
             
         case "DPRINT":
-        symb($word[1]);
-        manyArg($word[2]);
+            symb($word[1]);
+            if ($offset > 2){
+                manyArg();
+            }
             break;
             
             
         case "BREAK":
-            manyArg($word[1]);
+            if ($offset > 1){
+                manyArg();
+            }
             break;
         
         
