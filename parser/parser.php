@@ -25,7 +25,7 @@ while($Line = fgets($stdin)){
         }
         else {
             printf("\nChyba specifikacia jazyka\n");
-            return;
+            exit(21);
         }
     }
     else {
@@ -59,21 +59,24 @@ while($Line = fgets($stdin)){
             $inst_element->setAttribute("opcode", $keyWord);
             $program_element->appendChild($inst_element);
 
-            for ($i = 1; $i <= $offset; $i++){
+            for ($i = 1; $i < $offset; $i++){
                 if($i == 1){
                     $arg = "arg1";
+                    $var = $word[1];
                 }
                 elseif ($i == 2) {
                     $arg = "arg2";
+                    $var = $word[2];
                 }
                 else {
                     $arg = "arg3";
+                    $var = $word[3];
                 }
                     
                 
-                if(preg_match('/@/', $word[1], $match)){
-                    $cutType = substr($word[1],0, strpos($word[1], "@"));
-                    $value = substr($word[1],strpos($word[1], "@")+1);
+                if(preg_match('/@/', $var, $match)){
+                    $cutType = substr($var,0, strpos($var, "@"));
+                    $value = substr($var,strpos($var, "@")+1);
                     
                     switch ($cutType) {
                         
@@ -96,23 +99,25 @@ while($Line = fgets($stdin)){
                             break;
                             
                         case 'string':
+                            $value = replaceAmp($value);
+                            $value = replaceProblemChars($value);
                             $arg_element = $xml->createElement($arg, $value);
                             $arg_element->setAttribute("type", "string");
                             $inst_element->appendChild($arg_element);
                             break;
                             
                         case ('GF'||'LF'||'TF'):
-                            $arg_element = $xml->createElement($arg, $word[1]);
+                            $var = replaceAmp($var);
+                            $arg_element = $xml->createElement($arg, $var);
                             $arg_element->setAttribute("type", "var");
                             $inst_element->appendChild($arg_element);
                             break;
                         default:
-                            // code...
                             break;
                     }
                 }
                 else {
-                    switch ($word[1]) {
+                    switch ($var) {
                         case 'int':
                             $arg_element = $xml->createElement($arg, "int");
                             $arg_element->setAttribute("type", "type");
@@ -129,15 +134,14 @@ while($Line = fgets($stdin)){
                             $inst_element->appendChild($arg_element);
                             break;
                         default:
-                            $arg_element = $xml->createElement($arg, $word[1]);
+                            $var = replaceAmp($var);
+                            $arg_element = $xml->createElement($arg, $var);
                             $arg_element->setAttribute("type", "label");
                             $inst_element->appendChild($arg_element);
                             break;
                     }
                 }
-            }
-
-            
+            }            
         }
 
 
@@ -154,50 +158,111 @@ while($Line = fgets($stdin)){
     
 fclose($stdin);
 
+function replaceAmp($value){
+    if (preg_match('/&/', $value, $match)) {
+        $value = preg_replace('/&/', '&amp;', $value);
+    }
+    return $value;
+}
+
+function replaceProblemChars($value){
+    if (preg_match('/>/', $value, $match)) {
+        $value = preg_replace('/>/', '&gt;', $value);
+    }
+    if (preg_match('/</', $value, $match)) {
+        $value = preg_replace('/</', '&lt;', $value);
+    }
+    if (preg_match('/"/', $value, $match)) {
+        $value = preg_replace('/\"/', '&quot;', $value);
+    }
+    if (preg_match('/\'/', $value, $match)) {
+        $value = preg_replace('/\'/', '&apos;', $value);
+    }
+    return $value;
+}
 
 function variable($string2match){
     if(preg_match('/(LF|TF|GF)@[a-zA-Z0-9\_\-\$\&\%\*\!\?]+/', $string2match, $match)){
         return;
     }
     else {
-        exit;
+        exit(23);
     }
 }
 /*
 *checks syntax of symbols
 */
 function symb($string2match){
-    if(preg_match('/(LF|TF|GF|string|int|bool|nil)@[a-zA-Z0-9\_\-\$\&\%\*\!\?]*/', $string2match, $match)){
-        return;
+    if (preg_match('/@/', $string2match, $match)){
+        $cutType = substr($string2match,0, strpos($string2match, "@"));
+        
+        
+        if ($cutType == "int") {
+            if (preg_match('/int@[\-]*[0-9]+/', $string2match, $match)){
+                return;
+            }
+            else {
+                echo "exit symbol int\n";
+                exit(23);
+            }
+        }    
+        elseif ($cutType == "bool") {
+            if (preg_match('/bool@(true|false)/', $string2match, $match)){
+                return;
+            }
+            else {
+                echo "exit symbol bool\n";
+                exit(23);
+            }
+        }
+        elseif ($cutType == "nil") {
+            if (preg_match('/nil@nil)/', $string2match, $match)){
+                return;
+            }
+            else {
+                echo "exit symbol nil\n";
+                exit(23);
+            }
+        }
+        elseif ($cutType == "string") {
+            if (preg_match('/string@([^\ \\\\#]|\\\\[0-9]{3})*$/', $string2match, $match)){
+                return;
+            }
+            else {
+                echo "exit symbol string\n";
+                exit(23);
+            }
+        }
+        elseif ($cutType == "LF"||"TF"||"GF") {
+            if (preg_match('/(LF|TF|GF)@[a-zA-Z0-9\_\-\$\&\%\*\!\?]*/', $string2match, $match)){
+                return;
+            }
+            else {
+                echo "exit symbol frame\n";
+                exit(23);
+            }
+        }
+    
     }
     else {
-        exit;
+        exit(23);
     }
 }
-
 /*
 *checks syntax of labels
 */
 function label($string2match){
     if (preg_match('/@/', $string2match, $match)){
-        exit;
+        exit(23);
     }
     else {
         if(preg_match('/[a-zA-Z0-9\_\-\$\&\%\*\!\?]+/', $string2match, $match)){
             return;
         }
         else {
-            exit;
+            exit(23);
         }
-}
-}
-
-/*
-*checks if the number of args is correct
-*/
-function manyArg(){
-        echo "Error: Too many arg for this instruction!!\n";
-        exit;
+    }  
 }
 
 /*
@@ -208,10 +273,17 @@ function type($string2match){
         return;
     }
     else {
-        exit;
+        exit(23);
     }
 }
 
+/*
+*checks if the number of args is correct
+*/
+function manyArg(){
+    echo "Error: Too many arg for this instruction!!\n";
+    exit(23);
+}
 
 function parse($word, $offset){
     $keyWord = $word[0];
@@ -531,6 +603,7 @@ function parse($word, $offset){
         
         default:
             echo "DEFAULT: Not instruction\n";
+            exit(22);
             break;
     }
     
