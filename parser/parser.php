@@ -24,7 +24,6 @@ while($Line = fgets($stdin)){
             
         }
         else {
-            
             printf("\nChyba specifikacia jazyka\n");
             return;
         }
@@ -34,16 +33,14 @@ while($Line = fgets($stdin)){
         
         //looks for comment and cuts it off
         if (preg_match('/#/', $Line, $match)) {
-            
             $cutString = substr($Line,0, strpos($Line, "#"));
-            //if the posittion of # is 0 -> comment at the beginning of the line
             
+            //if the posittion of # is 0 -> comment at the beginning of the line
             if (strpos($Line, "#") == 0) {
                 $comment = true;
             }
             else {
                 $word = preg_split("/[\s]+/", $cutString);
-                
                 $keyWord = $word[0];
                 }
         }
@@ -57,214 +54,93 @@ while($Line = fgets($stdin)){
         
         if ($comment == false){
         
-        $inst_element = $xml->createElement("instruction");
-        $inst_element->setAttribute("order", $order);
-        $inst_element->setAttribute("opcode", $keyWord);
-        $program_element->appendChild($inst_element);
+            $inst_element = $xml->createElement("instruction");
+            $inst_element->setAttribute("order", $order);
+            $inst_element->setAttribute("opcode", $keyWord);
+            $program_element->appendChild($inst_element);
 
-        if ($offset > 1){
-            if(preg_match('/@/', $word[1], $match)){
-                $cutType = substr($word[1],0, strpos($word[1], "@"));
-                $value = substr($word[1],strpos($word[1], "@")+1);
-                
-                switch ($cutType) {
+            for ($i = 1; $i <= $offset; $i++){
+                if($i == 1){
+                    $arg = "arg1";
+                }
+                elseif ($i == 2) {
+                    $arg = "arg2";
+                }
+                else {
+                    $arg = "arg3";
+                }
                     
-                    case 'int':
-                        $arg_element = $xml->createElement("arg1", $value);
-                        $arg_element->setAttribute("type", "int");
-                        $inst_element->appendChild($arg_element);
-                        break;
-                        
-                    case 'bool':
-                        $arg_element = $xml->createElement("arg1", strtolower($value));
-                        $arg_element->setAttribute("type", "bool");
-                        $inst_element->appendChild($arg_element);
-                        break;
-                        
-                    case 'nil':
-                        $arg_element = $xml->createElement("arg1", "nil");
-                        $arg_element->setAttribute("type", "nil");
-                        $inst_element->appendChild($arg_element);
-                        break;
-                        
-                    case 'string':
-                        $arg_element = $xml->createElement("arg1", $value);
-                        $arg_element->setAttribute("type", "string");
-                        $inst_element->appendChild($arg_element);
-                        break;
-                        
-                    case ('GF'||'LF'||'TF'):
-                        $arg_element = $xml->createElement("arg1", $word[1]);
-                        $arg_element->setAttribute("type", "var");
-                        $inst_element->appendChild($arg_element);
-                        break;
-                    default:
-                        // code...
-                        break;
-                }
-            }
-            else {
-                switch ($word[1]) {
-                    case 'int':
-                        $arg_element = $xml->createElement("arg1", "int");
-                        $arg_element->setAttribute("type", "type");
-                        $inst_element->appendChild($arg_element);
-                        break;
-                    case 'bool':
-                        $arg_element = $xml->createElement("arg1", "bool");
-                        $arg_element->setAttribute("type", "type");
-                        $inst_element->appendChild($arg_element);
-                        break;
-                    case 'string':
-                        $arg_element = $xml->createElement("arg1", "string");
-                        $arg_element->setAttribute("type", "type");
-                        $inst_element->appendChild($arg_element);
-                        break;
-                    default:
-                        $arg_element = $xml->createElement("arg1", $word[1]);
-                        $arg_element->setAttribute("type", "label");
-                        $inst_element->appendChild($arg_element);
-                        break;
-                }
-            }
-        }
-        
-        
-        if ($offset > 2){
-            if(preg_match('/@/', $word[2], $match)){
-                $cutType = substr($word[2],0, strpos($word[2], "@"));
-                $value = substr($word[2],strpos($word[2], "@")+1);
                 
-                switch ($cutType) {
+                if(preg_match('/@/', $word[1], $match)){
+                    $cutType = substr($word[1],0, strpos($word[1], "@"));
+                    $value = substr($word[1],strpos($word[1], "@")+1);
                     
-                    case 'int':
-                        $arg_element = $xml->createElement("arg2", $value);
-                        $arg_element->setAttribute("type", "int");
-                        $inst_element->appendChild($arg_element);
-                        break;
+                    switch ($cutType) {
                         
-                    case 'bool':
-                        $arg_element = $xml->createElement("arg2", strtolower($value));
-                        $arg_element->setAttribute("type", "bool");
-                        $inst_element->appendChild($arg_element);
-                        break;
-                        
-                    case 'nil':
-                        $arg_element = $xml->createElement("arg2", "nil");
-                        $arg_element->setAttribute("type", "nil");
-                        $inst_element->appendChild($arg_element);
-                        break;
-                        
-                    case 'string':
-                        $arg_element = $xml->createElement("arg2", $value);
-                        $arg_element->setAttribute("type", "string");
-                        $inst_element->appendChild($arg_element);
-                        break;
-                        
-                    case ('GF'||'LF'||'TF'):
-                        $arg_element = $xml->createElement("arg2", $word[2]);
-                        $arg_element->setAttribute("type", "var");
-                        $inst_element->appendChild($arg_element);
-                        break;
-                    default:
-                        // code...
-                        break;
+                        case 'int':
+                            $arg_element = $xml->createElement($arg, $value);
+                            $arg_element->setAttribute("type", "int");
+                            $inst_element->appendChild($arg_element);
+                            break;
+                            
+                        case 'bool':
+                            $arg_element = $xml->createElement($arg, strtolower($value));
+                            $arg_element->setAttribute("type", "bool");
+                            $inst_element->appendChild($arg_element);
+                            break;
+                            
+                        case 'nil':
+                            $arg_element = $xml->createElement($arg, "nil");
+                            $arg_element->setAttribute("type", "nil");
+                            $inst_element->appendChild($arg_element);
+                            break;
+                            
+                        case 'string':
+                            $arg_element = $xml->createElement($arg, $value);
+                            $arg_element->setAttribute("type", "string");
+                            $inst_element->appendChild($arg_element);
+                            break;
+                            
+                        case ('GF'||'LF'||'TF'):
+                            $arg_element = $xml->createElement($arg, $word[1]);
+                            $arg_element->setAttribute("type", "var");
+                            $inst_element->appendChild($arg_element);
+                            break;
+                        default:
+                            // code...
+                            break;
+                    }
+                }
+                else {
+                    switch ($word[1]) {
+                        case 'int':
+                            $arg_element = $xml->createElement($arg, "int");
+                            $arg_element->setAttribute("type", "type");
+                            $inst_element->appendChild($arg_element);
+                            break;
+                        case 'bool':
+                            $arg_element = $xml->createElement($arg, "bool");
+                            $arg_element->setAttribute("type", "type");
+                            $inst_element->appendChild($arg_element);
+                            break;
+                        case 'string':
+                            $arg_element = $xml->createElement($arg, "string");
+                            $arg_element->setAttribute("type", "type");
+                            $inst_element->appendChild($arg_element);
+                            break;
+                        default:
+                            $arg_element = $xml->createElement($arg, $word[1]);
+                            $arg_element->setAttribute("type", "label");
+                            $inst_element->appendChild($arg_element);
+                            break;
+                    }
                 }
             }
-            else {
-                switch ($word[2]) {
-                    case 'int':
-                        $arg_element = $xml->createElement("arg2", "int");
-                        $arg_element->setAttribute("type", "type");
-                        $inst_element->appendChild($arg_element);
-                        break;
-                    case 'bool':
-                        $arg_element = $xml->createElement("arg2", "bool");
-                        $arg_element->setAttribute("type", "type");
-                        $inst_element->appendChild($arg_element);
-                        break;
-                    case 'string':
-                        $arg_element = $xml->createElement("arg2", "string");
-                        $arg_element->setAttribute("type", "type");
-                        $inst_element->appendChild($arg_element);
-                        break;
-                    default:
-                        $arg_element = $xml->createElement("arg2", $word[2]);
-                        $arg_element->setAttribute("type", "label");
-                        $inst_element->appendChild($arg_element);
-                        break;
-                }
-            }
+
+            
         }
-        
-        if ($offset > 3){
-            if(preg_match('/@/', $word[3], $match)){
-                $cutType = substr($word[3],0, strpos($word[3], "@"));
-                $value = substr($word[3],strpos($word[3], "@")+1);
-                
-                switch ($cutType) {
-                    
-                    case 'int':
-                        $arg_element = $xml->createElement("arg3", $value);
-                        $arg_element->setAttribute("type", "int");
-                        $inst_element->appendChild($arg_element);
-                        break;
-                        
-                    case 'bool':
-                        $arg_element = $xml->createElement("arg3", strtolower($value));
-                        $arg_element->setAttribute("type", "bool");
-                        $inst_element->appendChild($arg_element);
-                        break;
-                        
-                    case 'nil':
-                        $arg_element = $xml->createElement("arg3", "nil");
-                        $arg_element->setAttribute("type", "nil");
-                        $inst_element->appendChild($arg_element);
-                        break;
-                        
-                    case 'string':
-                        $arg_element = $xml->createElement("arg3", $value);
-                        $arg_element->setAttribute("type", "string");
-                        $inst_element->appendChild($arg_element);
-                        break;
-                        
-                    case ('GF'||'LF'||'TF'):
-                        $arg_element = $xml->createElement("arg3", $word[3]);
-                        $arg_element->setAttribute("type", "var");
-                        $inst_element->appendChild($arg_element);
-                        break;
-                    default:
-                        // code...
-                        break;
-                }
-            }
-            else {
-                switch ($word[3]) {
-                    case 'int':
-                        $arg_element = $xml->createElement("arg3", "int");
-                        $arg_element->setAttribute("type", "type");
-                        $inst_element->appendChild($arg_element);
-                        break;
-                    case 'bool':
-                        $arg_element = $xml->createElement("arg3", "bool");
-                        $arg_element->setAttribute("type", "type");
-                        $inst_element->appendChild($arg_element);
-                        break;
-                    case 'string':
-                        $arg_element = $xml->createElement("arg3", "string");
-                        $arg_element->setAttribute("type", "type");
-                        $inst_element->appendChild($arg_element);
-                        break;
-                    default:
-                        $arg_element = $xml->createElement("arg3", $word[3]);
-                        $arg_element->setAttribute("type", "label");
-                        $inst_element->appendChild($arg_element);
-                        break;
-                }
-            }
-        }
-    }
-        
+
+
         else {
             
         }
@@ -281,11 +157,9 @@ fclose($stdin);
 
 function variable($string2match){
     if(preg_match('/(LF|TF|GF)@[a-zA-Z0-9\_\-\$\&\%\*\!\?]+/', $string2match, $match)){
-        //echo"hura match var \n";
         return;
     }
     else {
-        //echo "fnuk var \n";
         exit;
     }
 }
@@ -294,11 +168,9 @@ function variable($string2match){
 */
 function symb($string2match){
     if(preg_match('/(LF|TF|GF|string|int|bool|nil)@[a-zA-Z0-9\_\-\$\&\%\*\!\?]*/', $string2match, $match)){
-        //echo"hura match sym \n";
         return;
     }
     else {
-        //echo "fnuk sym \n";
         exit;
     }
 }
@@ -312,11 +184,9 @@ function label($string2match){
     }
     else {
         if(preg_match('/[a-zA-Z0-9\_\-\$\&\%\*\!\?]+/', $string2match, $match)){
-            //echo"hura match label \n";
             return;
         }
         else {
-            //echo "fnuk label \n";
             exit;
         }
 }
@@ -335,11 +205,9 @@ function manyArg(){
 */
 function type($string2match){
     if (preg_match('/(string|int|bool)/', $string2match, $match)) {
-        //echo"hura match type\n";
         return;
     }
     else {
-        //echo "fnuk type\n";
         exit;
     }
 }
@@ -348,9 +216,6 @@ function type($string2match){
 function parse($word, $offset){
     $keyWord = $word[0];
 
-    
-    
-    
     switch (strtoupper($keyWord)) {
         case "MOVE":
             variable($word[1]);
