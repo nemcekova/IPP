@@ -12,19 +12,28 @@ $order = 1;
 while($Line = fgets($stdin)){
     $comment = false;
     if ($counter == 0) {
-        //if (strcmp($Line, ".IPPcode19\n") != 0) {
+        
         $Line = strtoupper($Line);
-        if (preg_match('/\.IPPCODE19/', $Line, $match)){
+        if (preg_match('/#/', $Line, $match)) {
+            $Line = substr($Line,0, strpos($Line, "#"));
+        }
+        if (preg_match('/^.IPPCODE19/', $Line, $match)){
+            $header = preg_split("/[\s]+/", $Line);
+            
+            if ((count($header) > 1) && ($header[1] != '')) {
+                    exit(21);    
+            }
+            
+            else{
             $counter++;
             
             $xml = new DomDocument("1.0", "UTF-8");
             $program_element = $xml->createElement("Program");
             $program_element->setAttribute("language", "IPPcode19");
             $xml->appendChild($program_element);
-            
+            }
         }
         else {
-            printf("\nChyba specifikacia jazyka\n");
             exit(21);
         }
     }
@@ -34,7 +43,6 @@ while($Line = fgets($stdin)){
         //looks for comment and cuts it off
         if (preg_match('/#/', $Line, $match)) {
             $cutString = substr($Line,0, strpos($Line, "#"));
-            
             //if the posittion of # is 0 -> comment at the beginning of the line
             if (strpos($Line, "#") == 0) {
                 $comment = true;
@@ -42,6 +50,7 @@ while($Line = fgets($stdin)){
             else {
                 $word = preg_split("/[\s]+/", $cutString);
                 $keyWord = $word[0];
+                $fuckmylife = true;
                 }
         }
         else {
@@ -49,7 +58,12 @@ while($Line = fgets($stdin)){
             $keyWord =strtoupper($word[0]);
         }
         
-        $offset = count($word) -1;
+        if ($emptyIndex = array_search('', $word)) {
+            unset($word[$emptyIndex]);
+        }
+        
+        
+        $offset = count($word);
         parse($word, $offset);
         
         if ($comment == false){
@@ -58,8 +72,9 @@ while($Line = fgets($stdin)){
             $inst_element->setAttribute("order", $order);
             $inst_element->setAttribute("opcode", $keyWord);
             $program_element->appendChild($inst_element);
-
+            
             for ($i = 1; $i < $offset; $i++){
+                
                 if($i == 1){
                     $arg = "arg1";
                     $var = $word[1];
@@ -113,6 +128,7 @@ while($Line = fgets($stdin)){
                             $inst_element->appendChild($arg_element);
                             break;
                         default:
+                            echo "aaaaaaaaaaa\n";
                             break;
                     }
                 }
@@ -150,7 +166,7 @@ while($Line = fgets($stdin)){
         }
         
         $order++;
-        
+            
     }
     }
     $xml->formatOutput = TRUE;
