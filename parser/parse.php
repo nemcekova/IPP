@@ -48,7 +48,14 @@ else{
     $order = 1;
     while($Line = fgets($stdin)){
         
-        //
+        //cuts off all white characters
+        $Line = trim($Line);
+        //empty line
+        if ($Line == "" || $Line == "\n") {
+            continue;
+        }
+        
+        //checks language specifications in header just in the beginning
         if ($checkHeader == 0) {
             
             $Line = strtoupper($Line);
@@ -248,7 +255,7 @@ function replaceProblemChars($value){
 
 //function checks syntax of a variable
 function variable($string2match){
-    if(preg_match('/(LF|TF|GF)@[a-zA-Z0-9\_\-\$\&\%\*\!\?]+$/', $string2match, $match)){
+    if(preg_match('/^(LF|TF|GF)@[a-zA-Z0-9\_\-\$\&\%\*\!\?]+$/', $string2match, $match)){
         return;
     }
     else {
@@ -264,7 +271,7 @@ function symb($string2match){
         
         
         if ($cutType == "int") {
-            if (preg_match('/int@[\-]*[0-9]+/', $string2match, $match)){
+            if (preg_match('/^int@[+-]{0,1}[0-9]+$/', $string2match, $match)){
                 return;
             }
             else {
@@ -272,7 +279,7 @@ function symb($string2match){
             }
         }    
         elseif ($cutType == "bool") {
-            if (preg_match('/bool@(true|false)/', $string2match, $match)){
+            if (preg_match('/^bool@(true|false)$/', $string2match, $match)){
                 return;
             }
             else {
@@ -280,7 +287,7 @@ function symb($string2match){
             }
         }
         elseif ($cutType == "nil") {
-            if (preg_match('/nil@nil)/', $string2match, $match)){
+            if (preg_match('/^nil@nil$/', $string2match, $match)){
                 return;
             }
             else {
@@ -288,7 +295,7 @@ function symb($string2match){
             }
         }
         elseif ($cutType == "string") {
-            if (preg_match('/string@([^\ \\\\#]|\\\\[0-9]{3})*$/', $string2match, $match)){
+            if (preg_match('/^string@([^\ \\\\#]|\\\\[0-9]{3})*$/', $string2match, $match)){
                 return;
             }
             else {
@@ -296,7 +303,7 @@ function symb($string2match){
             }
         }
         elseif ($cutType == "LF"||"TF"||"GF") {
-            if (preg_match('/(LF|TF|GF)@[a-zA-Z0-9\_\-\$\&\%\*\!\?]+$/', $string2match, $match)){
+            if (preg_match('/^(LF|TF|GF)@[a-zA-Z0-9\_\-\$\&\%\*\!\?]+$/', $string2match, $match)){
                 return;
             }
             else {
@@ -317,7 +324,7 @@ function label($string2match){
         exit(23);
     }
     else {
-        if(preg_match('/[a-zA-Z0-9\_\-\$\&\%\*\!\?]+/', $string2match, $match)){
+        if(preg_match('/^[a-zA-Z0-9\_\-\$\&\%\*\!\?]+$/', $string2match, $match)){
             return;
         }
         else {
@@ -330,7 +337,7 @@ function label($string2match){
 *checks syntax of type
 */
 function type($string2match){
-    if (preg_match('/(string|int|bool)/', $string2match, $match)) {
+    if (preg_match('/^(string|int|bool)$/', $string2match, $match)) {
         return;
     }
     else {
@@ -342,7 +349,6 @@ function type($string2match){
 *checks if the number of args is correct
 */
 function manyArg(){
-    echo "Error: Too many arg for this instruction!!\n";
     exit(23);
 }
 /*
