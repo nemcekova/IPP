@@ -11,13 +11,67 @@ import xml.etree.ElementTree as ET
 #if sys.argv[1] == "--help":
 #    print("---------HELP--------")
 
-parse_file = open("ipp.xml", "r")
+if (len(sys.argv) > 1):
+    if (sys.argv[1] != "--help"):
+        argument1 = sys.argv[1].split("=", 1)
+        
+        #if argv[1] is --source
+        if (argument1[0] == "--source"):
+            file_name = argument1[1]
+            try:
+                parse_file = open(file_name, "r")
+            except OSError as error:
+                sys.exit(11)
+            
+            
+            #loads input data if argv[2] exists
+            if(len(sys.argv) > 2):
+                argument2 = sys.argv[2].split("=", 1)
+                if (argument2[0] =="--input"):
+                    input_file = argument2[1]
+                    try:
+                        read_file = open(input_file, r)
+                    except OSError as error:
+                        sys.exit(11)
+                    
+        #if argv[1] is --input            
+        elif (argument1[0] =="--input"):
+            input_file = argument1[1]
+            try:
+                read_file = open(input_file, r)
+            except OSError as error:
+                sys.exit(11)
+            
+            #loads source file if argv[2] exists
+            if(len(sys.argv) > 2):
+                argument2 = sys.argv[2].split("=", 1)
+                if (argument2[0] == "--source"):
+                    file_name = argument2[1]
+                    try:
+                        parse_file =open(file_name, "r")
+                    except OSError as error:
+                        sys.exit(11)
+            else:
+                parse_file = sys.stdin.read()
+    else:
+        print("-----------HELP-------------")
+        sys.exit(0)
+else:
+    parse_file = sys.stdin.read()                
+                
 string = ""
 for line in parse_file:
     string += line
 #print(string)
-program = ET.fromstring(string)
+try:
+    program = ET.fromstring(string)
+except ET.ParseError as error:
+    sys.exit(31)
 
+for instruction in program:
+    print(instruction.attrib)
+         
+                
 GF={}
 TF=None
 LF=[]
@@ -392,6 +446,60 @@ def setchar_func(instruction):
     string_change[1] = "".join(string)
     
 ################################################################################
+def concat_func(instruction):
+    save_here = instruction[0].text
+    concat_sum = look_for_var(save_here)
+
+    if (instruction[1].attrib["type"] == "var"):
+        var1 = instruction[1].text
+        var_found1 = look_for_var(var1)
+        type1 = var_found1[0]
+        string1 = var_found1[1]
+        
+    else:
+        type1 = instruction[1].attrib["type"]
+        string1 = instruction[1].text
+    
+    if (instruction[2].attrib["type"] == "var"):
+        var2 = instruction[2].text
+        var_found2 = look_for_var(var2)
+        type2 = var_found2[0]
+        string2 = var_found2[1]
+        
+    else:
+        type2 = instruction[2].attrib["type"]
+        string2 = instruction[2].text
+        
+    if(type1 != "string" or type2 != "string"):
+        sys.exit(53)
+    
+    concat_sum[0] = "string"
+    concat_sum[1] = string1 + string2
+
+
+################################################################################
+def strlen_func(instruction):
+    lenght = look_for_var(instruction[0].text)
+    
+    if (instruction[1].attrib["type"] == "var"):
+        var1 = instruction[1].text
+        var_found1 = look_for_var(var1)
+        type = var_found1[0]
+        string = var_found1[1]
+        
+    else:
+        type = instruction[1].attrib["type"]
+        string = instruction[1].text
+        
+    print(string)
+    lenght[0] = "int"
+    lenght[1] = len(instruction[1].text)
+
+
+################################################################################
+print(program)
+
+
 for instruction in program:
     opcode = instruction.attrib["opcode"]
     
@@ -423,6 +531,10 @@ for instruction in program:
         getchar_func(instruction)
     elif opcode == "SETCHAR":
         setchar_func(instruction)
+    elif opcode == "CONCAT":
+        concat_func(instruction)
+    elif opcode == "STRLEN":
+        strlen_func(instruction)
         
 print("LF:")
 print(LF)
@@ -430,4 +542,6 @@ print("TF:")
 print(TF)  
 print("GF:") 
 print(GF)           
+                        
         
+
