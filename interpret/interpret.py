@@ -8,11 +8,6 @@ import sys
 import xml.etree.ElementTree as ET
 import re
 
-
-#if sys.argv[1] == "--help":
-#    print("---------HELP--------")
-
-
 ################################################################################
 def check_var(text):
     text = text.split("@", 1)
@@ -77,7 +72,7 @@ def check_symbol(type, text):
             sys.exit(32)
     elif type == "string":
         if(re.match('^([^\ \\\\#]|\\\\[0-9]{3})*$', text)):
-            RETURN
+            return
         else:
             sys.exit(32)
     elif type == "bool":
@@ -510,17 +505,50 @@ def strlen_func(instruction):
     lenght[0] = "int"
     lenght[1] = len(instruction[1].text)
 
-
 ################################################################################
+def change_arg_order(instruction):
+    
+    if len(instruction) == 2:
+        if instruction[0].tag > instruction[1].tag:
+            instruction[0], instruction[1] = instruction[1], instruction[0]
+            print(instruction[0].attrib)
+        else:
+            print("nie je vacsie")
+    elif len(instruction) == 3:
+        if instruction[0].tag > instruction[1].tag and instruction[1].tag > instruction[2].tag:
+            instruction[0], instruction[2] = instruction[2], instruction[0]
+            print(instruction[0].attrib)
+                
+                
+        elif instruction[0].tag > instruction[1].tag and instruction[1].tag < instruction[2].tag:
+            if instruction[0].tag > instruction[2].tag:
+                instruction[0], instruction[1], instruction[2] = instruction[1], instruction[2], instruction[0]
+            else:
+                instruction[0], instruction[1], instruction[2] = instruction[1], instruction[0], instruction[2]
+                    
+                    
+        elif instruction[0].tag < instruction[1].tag and instruction[1].tag > instruction[2].tag:
+            if instruction[0].tag > instruction[2].tag:
+                instruction[0], instruction[1], instruction[2] = instruction[2], instruction[0], instruction[1]
+            else:
+                instruction[0], instruction[1], instruction[2] = instruction[0], instruction[2], instruction[1]
+                        
+################################################################################
+#syntax and lexical analysis
 def syntax_analysis(instruction):
     if instruction.tag == "instruction":
         if "order" not in instruction.attrib:
             sys.exit(32)
         if "opcode" not in instruction.attrib:
             sys.exit(32)
+            
+        change_arg_order(instruction)       
+        
+        
         code = instruction.attrib["opcode"]
         if code == "CREATEFRAME" or code == "PUSHFRAME" or code == "POPFRAME" or code == "BREAK" or code == "RETURN":
             if (len(instruction) != 0):
+                print("526")
                 sys.exit(32)
         
         #instructions with 3 arguments: var, symb, symb
@@ -542,6 +570,7 @@ def syntax_analysis(instruction):
                 if instruction[1].attrib["type"] in ["var", "int", "string", "bool", "nil"]:
                     check_symbol(instruction[1].attrib["type"], instruction[1].text)
                 else:
+                    print("552")
                     sys.exit(32)
             #check third argument        
             if "type" not in instruction[2].attrib:
@@ -572,6 +601,9 @@ def syntax_analysis(instruction):
                     sys.exit(32)
         #instructions with one argument var
         elif code in ["DEFVAR", "POPS"]:
+            if len(instruction) != 1:
+                sys.exit(32)
+                
             if "type" not in instruction[0].attrib:
                 sys.exit(32)
             else:
@@ -581,6 +613,9 @@ def syntax_analysis(instruction):
                     check_var(instruction[0].text)
                     
         elif code in ["CALL", "LABEL", "JUMP"]:
+            if len(instruction) != 1:
+                sys.exit(32)
+            
             if "type" not in instruction[0].attrib:
                 sys.exit(32)
             else:
@@ -590,6 +625,9 @@ def syntax_analysis(instruction):
                     sys.exit(32)
         
         elif code in ["PUSHS", "WRITE", "EXIT", "DPRINT"]:
+            if len(instruction) != 1:
+                sys.exit(32)
+                
             if "type" not in instruction[0].attrib:
                 sys.exit(32)
             else:
@@ -597,7 +635,12 @@ def syntax_analysis(instruction):
                     check_symbol(instruction[1].attrib["type"], instruction[1].text)
                 else:
                     sys.exit(32)
+                    
+                    
         elif code in ["READ"]:
+            if len(instruction) != 2:
+                sys.exit(32)
+                
             if "type" not in instruction[0].attrib:
                 sys.exit(32)
             else:
@@ -607,6 +650,9 @@ def syntax_analysis(instruction):
                     sys.exit(32)
         
         elif code in ["JUMPIFEQ", "JUMPIFNEQ"]:
+            if len(instruction) != 3:
+                sys.exit(32)
+                
             if "type" not in instruction[0].attrib:
                 sys.exit(32)
             else:
@@ -630,6 +676,18 @@ def syntax_analysis(instruction):
                 else:
                     sys.exit(32)
 
+################################################################################
+def header(attribute):
+    if "language" in attribute and "name" in attribute and "description" in attribute:
+        return
+    elif "language" in attribute and "name" in attribute:
+        return
+    elif "language" in attribute and "description" in attribute:
+        return
+    elif "language" in attribute:
+        return
+    else: 
+        sys.exit(32)
 ################################################################################
 
 if (len(sys.argv) > 1):
@@ -690,17 +748,28 @@ except ET.ParseError as error:
     sys.exit(31)
 
 
+
+header(program.attrib)
+
+code = []
 #syntax analysis
 for instruction in program:
     syntax_analysis(instruction)
+    code.append(instruction)
                 
+print(code)
+code.sort(key = lambda x: x.attrib["order"])
+newlist = sorted(code, key=lambda x: x.attrib["order"])
+
+
+
 GF={}
 TF=None
 LF=[]
 
 
 
-for instruction in program:
+for instruction in newlist:
     opcode = instruction.attrib["opcode"]
     
     if opcode == "CREATEFRAME":
