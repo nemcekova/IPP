@@ -6,76 +6,91 @@
 #
 import sys
 import xml.etree.ElementTree as ET
+import re
 
 
 #if sys.argv[1] == "--help":
 #    print("---------HELP--------")
 
-if (len(sys.argv) > 1):
-    if (sys.argv[1] != "--help"):
-        argument1 = sys.argv[1].split("=", 1)
-        
-        #if argv[1] is --source
-        if (argument1[0] == "--source"):
-            file_name = argument1[1]
-            try:
-                parse_file = open(file_name, "r")
-            except OSError as error:
-                sys.exit(11)
-            
-            
-            #loads input data if argv[2] exists
-            if(len(sys.argv) > 2):
-                argument2 = sys.argv[2].split("=", 1)
-                if (argument2[0] =="--input"):
-                    input_file = argument2[1]
-                    try:
-                        read_file = open(input_file, r)
-                    except OSError as error:
-                        sys.exit(11)
-                    
-        #if argv[1] is --input            
-        elif (argument1[0] =="--input"):
-            input_file = argument1[1]
-            try:
-                read_file = open(input_file, r)
-            except OSError as error:
-                sys.exit(11)
-            
-            #loads source file if argv[2] exists
-            if(len(sys.argv) > 2):
-                argument2 = sys.argv[2].split("=", 1)
-                if (argument2[0] == "--source"):
-                    file_name = argument2[1]
-                    try:
-                        parse_file =open(file_name, "r")
-                    except OSError as error:
-                        sys.exit(11)
-            else:
-                parse_file = sys.stdin.read()
+
+################################################################################
+def check_var(text):
+    text = text.split("@", 1)
+    if (re.match('^([a-zA-Z]|[\_\-\$\&\%\*\!\?])([a-zA-Z0-9]|[\_\-\$\&\%\*\!\?])+$', text[1])):
+        return
+    
     else:
-        print("-----------HELP-------------")
-        sys.exit(0)
-else:
-    parse_file = sys.stdin.read()                
-                
-string = ""
-for line in parse_file:
-    string += line
-#print(string)
-try:
-    program = ET.fromstring(string)
-except ET.ParseError as error:
-    sys.exit(31)
+        sys.exit(32)
 
-for instruction in program:
-    print(instruction.attrib)
-         
-                
-GF={}
-TF=None
-LF=[]
 
+################################################################################
+def check_int(text):
+    if(re.match('^[+-]{0,1}[0-9]+$', text)):
+        return
+    else:
+        sys.exit(32)
+################################################################################
+def check_string(text):
+    if(re.match('^([^\ \\\\#]|\\\\[0-9]{3})*$', text)):
+        RETURN
+    else:
+        sys.exit(32)
+        
+################################################################################
+def check_bool(text):
+    if(re.match('^(true|false)$', text)):
+        return
+    else:
+        sys.exit(32)
+################################################################################
+def check_nil(text):
+    if(re.match('^nil$', text)):
+        return
+    else:
+        sys.exit(32)
+        
+################################################################################
+def check_label(text):
+    if(re.match('^([a-zA-Z]|[\_\-\$\&\%\*\!\?])([a-zA-Z0-9]|[\_\-\$\&\%\*\!\?])+$', text)):
+        return
+    else:
+        sys.exit(32)
+        
+################################################################################
+def check_type(text):
+    if(re.match('^(string|int|bool)$', text)):
+        return
+    else:
+        sys.exit
+################################################################################
+def check_symbol(type, text):
+    if type ==  "var":
+        text = text.split("@", 1)
+        if (re.match('^([a-zA-Z]|[\_\-\$\&\%\*\!\?])([a-zA-Z0-9]|[\_\-\$\&\%\*\!\?])+$', text[1])):
+            return
+        else:
+            sys.exit(32)
+    elif type == "int":
+        if(re.match('^[+-]{0,1}[0-9]+$', text)):
+            return
+        else:
+            sys.exit(32)
+    elif type == "string":
+        if(re.match('^([^\ \\\\#]|\\\\[0-9]{3})*$', text)):
+            RETURN
+        else:
+            sys.exit(32)
+    elif type == "bool":
+        if(re.match('^(true|false)$', text)):
+            return
+        else:
+            sys.exit(32)
+    elif type == "nil":
+        if(re.match('^nil$', text)):
+            return
+        else:
+            sys.exit(32)
+            
 ################################################################################
 #function for CREATEFRAME instruction
 #inicialize temporary frame
@@ -497,7 +512,141 @@ def strlen_func(instruction):
 
 
 ################################################################################
-print(program)
+def syntax_analysis(instruction):
+    if instruction.tag == "instruction":
+        if "order" not in instruction.attrib:
+            sys.exit(32)
+        if "opcode" not in instruction.attrib:
+            sys.exit(32)
+        code = instruction.attrib["opcode"]
+        if code == "CREATEFRAME" or code == "PUSHFRAME" or code == "POPFRAME" or code == "BREAK" or code == "RETURN":
+            if (len(instruction) != 0):
+                sys.exit(32)
+        
+        #instructions with 3 arguments: var, symb, symb
+        elif opcode in ["AND", "SUB", "MUL", "IDIV", "LT", "GT", "EQ", "AND", "OR", "NOT", "STRI2INT", "CONCAT", "GETCHAR", "SETCHAR"]:
+            if len(instruction) != 3:
+                sys.exit(32)
+            #check firts argument
+            if "type" not in instruction[0].attrib:
+                sys.exit(32) 
+            else:       
+                if instruction[0].attrib["type"] != "var":
+                    sys.exit(32)
+                else:
+                    check_var(instruction[0].text)
+            #check second argument        
+            if "type" not in instruction[1].attrib:
+                sys.exit(32)  
+            else:  
+                if instruction[1].attrib["type"] in ["var", "int", "string", "bool", "nil"]:
+                    check_symbol(instruction[1].attrib["type"], instruction[1].text)
+                else:
+                    sys.exit(32)
+            #check third argument        
+            if "type" not in instruction[2].attrib:
+                sys.exit(32)
+            else:    
+                if instruction[2].attrib["type"] in ["var", "int", "string", "bool", "nil"]:
+                    check_symbol(instruction[2].attrib["type"], instruction[1].text)
+                else:
+                    sys.exit(32)
+        #instructions with 2 arguments: var, symb
+        elif opcode in ["MOVE", "INT2CHAR", "STRLEN", "TYPE"]:
+            if len(instruction) != 2:
+                sys.exit(32)
+            #check first argument
+            if "type" not in instruction[0].attrib:
+                sys.exit(32)
+                if instruction[0].attrib["type"] != "var":
+                    sys.exit(32)
+                else:
+                    check_var(instruction[0].text)
+            #check second argument
+            if "type" not in instruction[1].attrib:
+                sys.exit(32)
+            else:
+                if instruction[1].attrib["type"] in ["var", "int", "string", "bool", "nil"]:
+                    check_symbol(instruction[1].attrib["type"], instruction[1].text)
+                else:
+                    sys.exit(32)
+        #instructions with one argument var
+    elif opcode in ["DEFVAR", "POPS"]:
+        if "type" not in instruction[0].attrib:
+            sys.exit(32)
+            if instruction[0].attrib["type"] != "var":
+                sys.exit(32)
+            else:
+                check_var(instruction[0].text)
+
+################################################################################
+
+if (len(sys.argv) > 1):
+    if (sys.argv[1] != "--help"):
+        argument1 = sys.argv[1].split("=", 1)
+        
+        #if argv[1] is --source
+        if (argument1[0] == "--source"):
+            file_name = argument1[1]
+            try:
+                parse_file = open(file_name, "r")
+            except OSError as error:
+                sys.exit(11)
+            
+            
+            #loads input data if argv[2] exists
+            if(len(sys.argv) > 2):
+                argument2 = sys.argv[2].split("=", 1)
+                if (argument2[0] =="--input"):
+                    input_file = argument2[1]
+                    try:
+                        read_file = open(input_file, r)
+                    except OSError as error:
+                        sys.exit(11)
+                    
+        #if argv[1] is --input            
+        elif (argument1[0] =="--input"):
+            input_file = argument1[1]
+            try:
+                read_file = open(input_file, r)
+            except OSError as error:
+                sys.exit(11)
+            
+            #loads source file if argv[2] exists
+            if(len(sys.argv) > 2):
+                argument2 = sys.argv[2].split("=", 1)
+                if (argument2[0] == "--source"):
+                    file_name = argument2[1]
+                    try:
+                        parse_file =open(file_name, "r")
+                    except OSError as error:
+                        sys.exit(11)
+            else:
+                parse_file = sys.stdin.read()
+    else:
+        print("-----------HELP-------------")
+        sys.exit(0)
+else:
+    parse_file = sys.stdin.read()                
+                
+string = ""
+for line in parse_file:
+    string += line
+#print(string)
+try:
+    program = ET.fromstring(string)
+except ET.ParseError as error:
+    sys.exit(31)
+
+
+#syntax analysis
+for instruction in program:
+    syntax_analysis(instruction)
+                
+GF={}
+TF=None
+LF=[]
+
 
 
 for instruction in program:
