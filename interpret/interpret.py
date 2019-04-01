@@ -524,7 +524,7 @@ def syntax_analysis(instruction):
                 sys.exit(32)
         
         #instructions with 3 arguments: var, symb, symb
-        elif opcode in ["AND", "SUB", "MUL", "IDIV", "LT", "GT", "EQ", "AND", "OR", "NOT", "STRI2INT", "CONCAT", "GETCHAR", "SETCHAR"]:
+        elif code in ["AND", "SUB", "MUL", "IDIV", "LT", "GT", "EQ", "AND", "OR", "NOT", "STRI2INT", "CONCAT", "GETCHAR", "SETCHAR"]:
             if len(instruction) != 3:
                 sys.exit(32)
             #check firts argument
@@ -552,7 +552,7 @@ def syntax_analysis(instruction):
                 else:
                     sys.exit(32)
         #instructions with 2 arguments: var, symb
-        elif opcode in ["MOVE", "INT2CHAR", "STRLEN", "TYPE"]:
+        elif code in ["MOVE", "INT2CHAR", "STRLEN", "TYPE"]:
             if len(instruction) != 2:
                 sys.exit(32)
             #check first argument
@@ -571,13 +571,64 @@ def syntax_analysis(instruction):
                 else:
                     sys.exit(32)
         #instructions with one argument var
-    elif opcode in ["DEFVAR", "POPS"]:
-        if "type" not in instruction[0].attrib:
-            sys.exit(32)
-            if instruction[0].attrib["type"] != "var":
+        elif code in ["DEFVAR", "POPS"]:
+            if "type" not in instruction[0].attrib:
                 sys.exit(32)
             else:
-                check_var(instruction[0].text)
+                if instruction[0].attrib["type"] != "var":
+                    sys.exit(32)
+                else:
+                    check_var(instruction[0].text)
+                    
+        elif code in ["CALL", "LABEL", "JUMP"]:
+            if "type" not in instruction[0].attrib:
+                sys.exit(32)
+            else:
+                if instruction[0].attrib["type"] == "label":
+                    check_label(instruction[0].text)  
+                else:
+                    sys.exit(32)
+        
+        elif code in ["PUSHS", "WRITE", "EXIT", "DPRINT"]:
+            if "type" not in instruction[0].attrib:
+                sys.exit(32)
+            else:
+                if instruction[0].attrib["type"] in ["var", "int", "string", "bool", "nil"]:
+                    check_symbol(instruction[1].attrib["type"], instruction[1].text)
+                else:
+                    sys.exit(32)
+        elif code in ["READ"]:
+            if "type" not in instruction[0].attrib:
+                sys.exit(32)
+            else:
+                if instruction[0].attrib["type"] in ["var"]:
+                    check_var(instruction[0].text)
+                else:
+                    sys.exit(32)
+        
+        elif code in ["JUMPIFEQ", "JUMPIFNEQ"]:
+            if "type" not in instruction[0].attrib:
+                sys.exit(32)
+            else:
+                if instruction[0].attrib["type"] == "label":
+                    check_label(instruction[0].text)  
+                else:
+                    sys.exit(32)
+            if "type" not in instruction[1].attrib:
+                sys.exit(32)  
+            else:  
+                if instruction[1].attrib["type"] in ["var", "int", "string", "bool", "nil"]:
+                    check_symbol(instruction[1].attrib["type"], instruction[1].text)
+                else:
+                    sys.exit(32)
+            #check third argument        
+            if "type" not in instruction[2].attrib:
+                sys.exit(32)
+            else:    
+                if instruction[2].attrib["type"] in ["var", "int", "string", "bool", "nil"]:
+                    check_symbol(instruction[2].attrib["type"], instruction[1].text)
+                else:
+                    sys.exit(32)
 
 ################################################################################
 
