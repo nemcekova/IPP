@@ -485,9 +485,88 @@ def write_func(instruction):
     print(msg, end=" ")
 
 ################################################################################
-def read_func(instruction):
+def read_func(instruction, from_file):
     save_here = look_for_var(instruction[0].text)
-    type = instruction[0].text
+    typ = instruction[1].text
+    
+    if from_file == True:
+        global read_file
+        line = read_file.readline()
+        save_here[1] = line.rstrip("\n")
+        
+    else:
+        line = input()    
+        save_here[1] = line
+        
+    if typ == "int":
+        if(re.match('^[+-]{0,1}[0-9]+$', line)):
+            save_here[0] = "int"
+        else:
+            save_here[0] = "int"
+            save_here[1] = "0"
+    elif typ == "string":
+        if (re.match('^([^\ \\\\#]|\\\\[0-9]{3})*$', line)):
+            save_here[0] = "string"
+        else:
+            save_here[0] = "string"
+            save_here[1] = ""
+    elif typ == "bool":
+        if(re.match('^(true)$', line.lower())):
+            save_here[0] = "bool"
+            save_here[1] = "true"
+        else:
+            save_here[0] = "bool"
+            save_here[1] = "false"
+################################################################################
+def int2char_func(instruction):
+    save_here = look_for_var(instruction[0].text)
+    if (instruction[1].attrib["type"] == "var"):
+        var_found = look_for_var(instruction[1].text)
+        typ = var_found[0]
+        number = int(var_found[1])
+    
+    else:
+        typ = instruction[1].attrib["type"]
+        number = int(instruction[1].text)
+    
+    if typ != "int":
+        sys.exit(53)
+    else:
+        if number > 65533:
+            sys.exit(58)
+        else:
+            save_here[0] = "string"
+            save_here[1] = chr(number)
+################################################################################
+def stri2int_func(instruction):
+    save_here = look_for_var(instruction[0].text)
+    if (instruction[1].attrib["type"] == "var"):
+        var_found = look_for_var(instruction[1].text)
+        typ_string = var_found[0]
+        string = var_found[1]
+    
+    else:
+        typ_string = instruction[1].attrib["type"]
+        string = instruction[1].text
+        
+    if (instruction[2].attrib["type"] == "var"):
+        var = look_for_var(instruction[2].text)
+        typ_int = var[0]
+        i = int(var[1])
+    
+    else:
+        typ_int = instruction[2].attrib["type"]
+        i = int(instruction[2].text) 
+           
+    if typ_string != "string" or typ_int != "int":
+        print("hehe")
+        sys.exit(32)
+    else:
+        if len(string) -1 < i:
+            sys.exit(58)
+        else:
+            char = string[i]
+            save_here[1] = ord(char)
 ################################################################################
 ################################################################################
 def check_var(text):
@@ -508,7 +587,7 @@ def check_int(text):
 ################################################################################
 def check_string(text):
     if(re.match('^([^\ \\\\#]|\\\\[0-9]{3})*$', text)):
-        RETURN
+        return
     else:
         sys.exit(32)
         
@@ -670,7 +749,7 @@ def syntax_analysis(instruction):
                 sys.exit(32)
             else:    
                 if instruction[2].attrib["type"] in ["var", "int", "string", "bool", "nil"]:
-                    check_symbol(instruction[2].attrib["type"], instruction[1].text)
+                    check_symbol(instruction[2].attrib["type"], instruction[2].text)
                 else:
                     sys.exit(32)
                     
@@ -812,7 +891,7 @@ if (len(sys.argv) > 1):
                 parse_file = open(file_name, "r")
             except OSError as error:
                 sys.exit(11)
-            
+            from_file = False
             
             #loads input data if argv[2] exists
             if(len(sys.argv) > 2):
@@ -820,9 +899,10 @@ if (len(sys.argv) > 1):
                 if (argument2[0] =="--input"):
                     input_file = argument2[1]
                     try:
-                        read_file = open(input_file, r)
+                        read_file = open(input_file, "r")
                     except OSError as error:
                         sys.exit(11)
+                    from_file = True
                     
         #if argv[1] is --input            
         elif (argument1[0] =="--input"):
@@ -831,6 +911,7 @@ if (len(sys.argv) > 1):
                 read_file = open(input_file, r)
             except OSError as error:
                 sys.exit(11)
+            from_file = True
             
             #loads source file if argv[2] exists
             if(len(sys.argv) > 2):
@@ -868,9 +949,7 @@ for instruction in program:
     syntax_analysis(instruction)
     code.append(instruction)
                 
-
-code.sort(key = lambda x: x.attrib["order"])
-instruction_list = sorted(code, key=lambda x: x.attrib["order"])
+instruction_list = sorted(code, key=lambda x: int(x.attrib["order"]))
 
 
 
@@ -882,6 +961,7 @@ LF=[]
 
 for instruction in instruction_list:
     opcode = instruction.attrib["opcode"].upper()
+    print(opcode)
     
     if opcode == "CREATEFRAME":
         createframe_func()    
@@ -924,7 +1004,11 @@ for instruction in instruction_list:
     elif opcode == "WRITE":
         write_func(instruction)
     elif opcode == "READ":
-        read_func(instruction)
+        read_func(instruction, from_file)
+    elif opcode == "INT2CHAR":
+        int2char_func(instruction)
+    elif opcode == "STRI2INT":
+        stri2int_func(instruction)
         
 print("LF:")
 print(LF)
