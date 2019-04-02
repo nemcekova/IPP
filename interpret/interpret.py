@@ -9,84 +9,6 @@ import xml.etree.ElementTree as ET
 import re
 
 ################################################################################
-def check_var(text):
-    text = text.split("@", 1)
-    if (re.match('^([a-zA-Z]|[\_\-\$\&\%\*\!\?])([a-zA-Z0-9]|[\_\-\$\&\%\*\!\?])+$', text[1])):
-        return
-    
-    else:
-        sys.exit(32)
-
-
-################################################################################
-def check_int(text):
-    if(re.match('^[+-]{0,1}[0-9]+$', text)):
-        return
-    else:
-        sys.exit(32)
-################################################################################
-def check_string(text):
-    if(re.match('^([^\ \\\\#]|\\\\[0-9]{3})*$', text)):
-        RETURN
-    else:
-        sys.exit(32)
-        
-################################################################################
-def check_bool(text):
-    if(re.match('^(true|false)$', text)):
-        return
-    else:
-        sys.exit(32)
-################################################################################
-def check_nil(text):
-    if(re.match('^nil$', text)):
-        return
-    else:
-        sys.exit(32)
-        
-################################################################################
-def check_label(text):
-    if(re.match('^([a-zA-Z]|[\_\-\$\&\%\*\!\?])([a-zA-Z0-9]|[\_\-\$\&\%\*\!\?])+$', text)):
-        return
-    else:
-        sys.exit(32)
-        
-################################################################################
-def check_type(text):
-    if(re.match('^(string|int|bool)$', text)):
-        return
-    else:
-        sys.exit
-################################################################################
-def check_symbol(type, text):
-    if type ==  "var":
-        text = text.split("@", 1)
-        if (re.match('^([a-zA-Z]|[\_\-\$\&\%\*\!\?])([a-zA-Z0-9]|[\_\-\$\&\%\*\!\?])+$', text[1])):
-            return
-        else:
-            sys.exit(32)
-    elif type == "int":
-        if(re.match('^[+-]{0,1}[0-9]+$', text)):
-            return
-        else:
-            sys.exit(32)
-    elif type == "string":
-        if(re.match('^([^\ \\\\#]|\\\\[0-9]{3})*$', text)):
-            return
-        else:
-            sys.exit(32)
-    elif type == "bool":
-        if(re.match('^(true|false)$', text)):
-            return
-        else:
-            sys.exit(32)
-    elif type == "nil":
-        if(re.match('^nil$', text)):
-            return
-        else:
-            sys.exit(32)
-            
-################################################################################
 #function for CREATEFRAME instruction
 #inicialize temporary frame
 def createframe_func():
@@ -273,6 +195,7 @@ def compare_func(instruction, opcode):
     save_here = instruction[0].text
     sum = look_for_var(save_here)
     
+    #looks for first operand
     if (instruction[1].attrib["type"] == "var"):
         var1 = instruction[1].text
         var_found1 = look_for_var(var1)
@@ -283,6 +206,7 @@ def compare_func(instruction, opcode):
         type1 = instruction[1].attrib["type"]
         compare1 = instruction[1].text
     
+    #looks for second operand
     if (instruction[2].attrib["type"] == "var"):
         var2 = instruction[2].text
         var_found2 = look_for_var(var2)
@@ -293,8 +217,10 @@ def compare_func(instruction, opcode):
         type2 = instruction[2].attrib["type"]
         compare2 = instruction[2].text
     
-    if (type1 != type2):
-        sys.exit()
+    #EQ can compare different types
+    if (type1 != type2 and opcode != "EQ"):
+        sys.exit(53)
+        
         
         
     if (type1 == "int" and type2 == "int"):
@@ -486,7 +412,6 @@ def concat_func(instruction):
     concat_sum[0] = "string"
     concat_sum[1] = string1 + string2
 
-
 ################################################################################
 def strlen_func(instruction):
     lenght = look_for_var(instruction[0].text)
@@ -494,45 +419,214 @@ def strlen_func(instruction):
     if (instruction[1].attrib["type"] == "var"):
         var1 = instruction[1].text
         var_found1 = look_for_var(var1)
-        type = var_found1[0]
         string = var_found1[1]
         
     else:
-        type = instruction[1].attrib["type"]
         string = instruction[1].text
         
-    print(string)
+
     lenght[0] = "int"
-    lenght[1] = len(instruction[1].text)
+    lenght[1] = len(string)
+    
+################################################################################
+def type_func(instruction):
+    save_here = look_for_var(instruction[0].text)
+    
+    if (instruction[1].attrib["type"] == "var"):
+        var_found = look_for_var(instruction[1].text)
+        type = var_found[0]
+    
+    else:
+        type = instruction[1].attrib["type"]
+        
+    print(type)
+    save_here[0] = "type"
+    if type == "var":
+        save_here[1] = ""
+    else:
+        save_here[1] = type
+################################################################################
+def exit_func(instruction):
+    if (instruction[0].attrib["type"] == "var"):
+        var = look_for_var(instruction[0].text)
+        type = var[0]
+        if type != "int":
+            sys.exit(53)
+        exit_code = int(var[1])
+    else:
+        type = instruction[0].attrib["type"]
+        if type != "int":
+            sys.exit(53)
+        exit_code = int(instruction[0].text)
+            
+    if exit_code < 0 or exit_code > 49:
+        sys.exit(57)
+    else:
+        sys.exit(exit_code)
 
 ################################################################################
+def dprint_func(instruction):
+    if (instruction[0].attrib["type"] == "var"):
+        var = look_for_var(instruction[0].text)
+        error_msg = var[1]
+    else:
+        error_msg = instruction[0].text
+        
+    print(error_msg, file=sys.stderr)
+    
+################################################################################
+def write_func(instruction):
+    if (instruction[0].attrib["type"] == "var"):
+        var = look_for_var(instruction[0].text)
+        msg = var[1]
+    else:
+        msg = instruction[0].text
+    
+    print(msg, end=" ")
+
+################################################################################
+def read_func(instruction):
+    save_here = look_for_var(instruction[0].text)
+    type = instruction[0].text
+################################################################################
+################################################################################
+def check_var(text):
+    text = text.split("@", 1)
+    if (re.match('^([a-zA-Z]|[\_\-\$\&\%\*\!\?])([a-zA-Z0-9]|[\_\-\$\&\%\*\!\?])+$', text[1])):
+        return
+    
+    else:
+        sys.exit(32)
+
+
+################################################################################
+def check_int(text):
+    if(re.match('^[+-]{0,1}[0-9]+$', text)):
+        return
+    else:
+        sys.exit(32)
+################################################################################
+def check_string(text):
+    if(re.match('^([^\ \\\\#]|\\\\[0-9]{3})*$', text)):
+        RETURN
+    else:
+        sys.exit(32)
+        
+################################################################################
+def check_bool(text):
+    if(re.match('^(true|false)$', text)):
+        return
+    else:
+        sys.exit(32)
+################################################################################
+def check_nil(text):
+    if(re.match('^nil$', text)):
+        return
+    else:
+        sys.exit(32)
+        
+################################################################################
+def check_label(text):
+    if(re.match('^([a-zA-Z]|[\_\-\$\&\%\*\!\?])([a-zA-Z0-9]|[\_\-\$\&\%\*\!\?])+$', text)):
+        return
+    else:
+        sys.exit(32)
+        
+################################################################################
+def check_type(text):
+    if(re.match('^(string|int|bool)$', text)):
+        return
+    else:
+        sys.exit
+################################################################################
+def check_symbol(type, text):
+    if type ==  "var":
+        text = text.split("@", 1)
+        if (re.match('^([a-zA-Z]|[\_\-\$\&\%\*\!\?])([a-zA-Z0-9]|[\_\-\$\&\%\*\!\?])+$', text[1])):
+            return
+        else:
+            sys.exit(32)
+    elif type == "int":
+        if(re.match('^[+-]{0,1}[0-9]+$', text)):
+            return
+        else:
+            sys.exit(32)
+    elif type == "string":
+        if(re.match('^([^\ \\\\#]|\\\\[0-9]{3})*$', text)):
+            return
+        else:
+            sys.exit(32)
+    elif type == "bool":
+        if(re.match('^(true|false)$', text)):
+            return
+        else:
+            sys.exit(32)
+    elif type == "nil":
+        if(re.match('^nil$', text)):
+            return
+        else:
+            sys.exit(32)
+            
+################################################################################
+#function corrects order of arguments
 def change_arg_order(instruction):
     
+    #2 arguments
     if len(instruction) == 2:
+        #arg2, arg1
         if instruction[0].tag > instruction[1].tag:
             instruction[0], instruction[1] = instruction[1], instruction[0]
-            print(instruction[0].attrib)
+            if instruction[0].tag != "arg1" and instruction[1].tag != "arg2":
+                sys.exit(32)
         else:
-            print("nie je vacsie")
+            if instruction[0].tag != "arg1" and instruction[1].tag != "arg2":
+                sys.exit(32)
+            else:
+                return
+    #3 arguments            
     elif len(instruction) == 3:
+        #arg3, arg2, arg1
         if instruction[0].tag > instruction[1].tag and instruction[1].tag > instruction[2].tag:
             instruction[0], instruction[2] = instruction[2], instruction[0]
-            print(instruction[0].attrib)
+            if instruction[0].tag != "arg1" or instruction[1].tag != "arg2" or instruction[2].tag != "arg3":
+                sys.exit(32)
                 
                 
         elif instruction[0].tag > instruction[1].tag and instruction[1].tag < instruction[2].tag:
+            #arg3, arg1, arg2
             if instruction[0].tag > instruction[2].tag:
                 instruction[0], instruction[1], instruction[2] = instruction[1], instruction[2], instruction[0]
+                if instruction[0].tag != "arg1" or instruction[1].tag != "arg2" or instruction[2].tag != "arg3":
+                    sys.exit(32)
+            #arg2, arg1, arg3
             else:
                 instruction[0], instruction[1], instruction[2] = instruction[1], instruction[0], instruction[2]
+                if instruction[0].tag != "arg1" or instruction[1].tag != "arg2" or instruction[2].tag != "arg3":
+                    sys.exit(32)
                     
                     
         elif instruction[0].tag < instruction[1].tag and instruction[1].tag > instruction[2].tag:
+            #arg2, arg3, arg1
             if instruction[0].tag > instruction[2].tag:
                 instruction[0], instruction[1], instruction[2] = instruction[2], instruction[0], instruction[1]
+                if instruction[0].tag != "arg1" or instruction[1].tag != "arg2" or instruction[2].tag != "arg3":
+                    sys.exit(32)
+            #arg1, arg3. arg2
             else:
                 instruction[0], instruction[1], instruction[2] = instruction[0], instruction[2], instruction[1]
-                        
+                if instruction[0].tag != "arg1" or instruction[1].tag != "arg2" or instruction[2].tag != "arg3":
+                    sys.exit(32)
+        else:
+            #arg1, arg3, arg2
+            if instruction[0].tag != "arg1" or instruction[1].tag != "arg2" or instruction[2].tag != "arg3":
+                sys.exit(32)
+            else:
+                return
+    #instruction with 1 argument            
+    elif len(instruction) == 1:
+        if instruction[0].tag != "arg1":
+            sys.exit(32)
+            
 ################################################################################
 #syntax and lexical analysis
 def syntax_analysis(instruction):
@@ -543,12 +637,11 @@ def syntax_analysis(instruction):
             sys.exit(32)
             
         change_arg_order(instruction)       
-        
-        
         code = instruction.attrib["opcode"]
+        
+        #instructions with 0 arguments
         if code == "CREATEFRAME" or code == "PUSHFRAME" or code == "POPFRAME" or code == "BREAK" or code == "RETURN":
             if (len(instruction) != 0):
-                print("526")
                 sys.exit(32)
         
         #instructions with 3 arguments: var, symb, symb
@@ -580,6 +673,7 @@ def syntax_analysis(instruction):
                     check_symbol(instruction[2].attrib["type"], instruction[1].text)
                 else:
                     sys.exit(32)
+                    
         #instructions with 2 arguments: var, symb
         elif code in ["MOVE", "INT2CHAR", "STRLEN", "TYPE"]:
             if len(instruction) != 2:
@@ -599,7 +693,8 @@ def syntax_analysis(instruction):
                     check_symbol(instruction[1].attrib["type"], instruction[1].text)
                 else:
                     sys.exit(32)
-        #instructions with one argument var
+                    
+        #instructions with 1 argument: var
         elif code in ["DEFVAR", "POPS"]:
             if len(instruction) != 1:
                 sys.exit(32)
@@ -611,7 +706,7 @@ def syntax_analysis(instruction):
                     sys.exit(32)
                 else:
                     check_var(instruction[0].text)
-                    
+        #instructions with 1 argument: label            
         elif code in ["CALL", "LABEL", "JUMP"]:
             if len(instruction) != 1:
                 sys.exit(32)
@@ -624,6 +719,7 @@ def syntax_analysis(instruction):
                 else:
                     sys.exit(32)
         
+        #instructions with 1 argument: symb
         elif code in ["PUSHS", "WRITE", "EXIT", "DPRINT"]:
             if len(instruction) != 1:
                 sys.exit(32)
@@ -636,11 +732,11 @@ def syntax_analysis(instruction):
                 else:
                     sys.exit(32)
                     
-                    
+        #instructions with 2 arguments: var, type
         elif code in ["READ"]:
             if len(instruction) != 2:
                 sys.exit(32)
-                
+                #check firts argument    
             if "type" not in instruction[0].attrib:
                 sys.exit(32)
             else:
@@ -648,11 +744,20 @@ def syntax_analysis(instruction):
                     check_var(instruction[0].text)
                 else:
                     sys.exit(32)
+                #check second argument
+            if "type" not in instruction[0].attrib:
+                sys.exit(32)
+            else:
+                if instruction[1].attribute["type"] in ["type"]:
+                    check_type(instruction[1].text)
+                else:
+                    sys.exit(32)
         
+        #instructions with 3 arguments: label, symb, symb
         elif code in ["JUMPIFEQ", "JUMPIFNEQ"]:
             if len(instruction) != 3:
                 sys.exit(32)
-                
+            #check firts argument    
             if "type" not in instruction[0].attrib:
                 sys.exit(32)
             else:
@@ -660,6 +765,7 @@ def syntax_analysis(instruction):
                     check_label(instruction[0].text)  
                 else:
                     sys.exit(32)
+            #check second argument
             if "type" not in instruction[1].attrib:
                 sys.exit(32)  
             else:  
@@ -677,6 +783,7 @@ def syntax_analysis(instruction):
                     sys.exit(32)
 
 ################################################################################
+#function check header attributes
 def header(attribute):
     if "language" in attribute and "name" in attribute and "description" in attribute:
         return
@@ -688,7 +795,11 @@ def header(attribute):
         return
     else: 
         sys.exit(32)
+        
+        
 ################################################################################
+################################################################################
+
 
 if (len(sys.argv) > 1):
     if (sys.argv[1] != "--help"):
@@ -757,9 +868,9 @@ for instruction in program:
     syntax_analysis(instruction)
     code.append(instruction)
                 
-print(code)
+
 code.sort(key = lambda x: x.attrib["order"])
-newlist = sorted(code, key=lambda x: x.attrib["order"])
+instruction_list = sorted(code, key=lambda x: x.attrib["order"])
 
 
 
@@ -769,8 +880,8 @@ LF=[]
 
 
 
-for instruction in newlist:
-    opcode = instruction.attrib["opcode"]
+for instruction in instruction_list:
+    opcode = instruction.attrib["opcode"].upper()
     
     if opcode == "CREATEFRAME":
         createframe_func()    
@@ -804,6 +915,16 @@ for instruction in newlist:
         concat_func(instruction)
     elif opcode == "STRLEN":
         strlen_func(instruction)
+    elif opcode == "TYPE":
+        type_func(instruction)
+    elif opcode == "EXIT":
+        exit_func(instruction)
+    elif opcode == "DPRINT":
+        dprint_func(instruction)
+    elif opcode == "WRITE":
+        write_func(instruction)
+    elif opcode == "READ":
+        read_func(instruction)
         
 print("LF:")
 print(LF)
@@ -811,6 +932,3 @@ print("TF:")
 print(TF)  
 print("GF:") 
 print(GF)           
-                        
-        
-
