@@ -610,7 +610,70 @@ def jump_func(instruction):
         return(int(Labels[jump_to]))
     else:
         sys.exit(52)
+
 ################################################################################
+def jumpifeq_func(instruction):
+    jump_to = instruction[0].text
+    
+    if (instruction[1].attrib["type"] == "var"):
+        var_found = look_for_var(instruction[1].text)
+        typ1 = var_found[0]
+        data1 = var_found[1]
+    else:
+        typ1 = instruction[1].attrib["type"]
+        data1 = instruction[1].text
+        
+    if (instruction[2].attrib["type"] == "var"):
+        var = look_for_var(instruction[2].text)
+        typ2 = var[0]
+        data2 = var[1]
+    else:
+        typ2 = instruction[2].attrib["type"]
+        data2 = instruction[2].text
+        
+    if typ1 != typ2:
+        sys.exit(53)
+    else:
+        if data1 == data2:
+            global i, Labels
+            if jump_to in Labels:
+                i = int(Labels[jump_to])
+            else:
+                sys.exit(52)
+        else:
+            return
+################################################################################
+def jumpifneq_fun(instruction):
+    jump_to = instruction[0].text
+    
+    if (instruction[1].attrib["type"] == "var"):
+        var_found = look_for_var(instruction[1].text)
+        typ1 = var_found[0]
+        data1 = var_found[1]
+    else:
+        typ1 = instruction[1].attrib["type"]
+        data1 = instruction[1].text
+            
+    if (instruction[2].attrib["type"] == "var"):
+        var = look_for_var(instruction[2].text)
+        typ2 = var[0]
+        data2 = var[1]
+    else:
+        typ2 = instruction[2].attrib["type"]
+        data2 = instruction[2].text
+                
+    if typ1 != typ2:
+        sys.exit(53)
+    else:
+        if data1 != data2:
+            global i, Labels
+            if jump_to in Labels:
+                i = int(Labels[jump_to])
+            else:
+                sys.exit(52)
+        else:
+            return 
+ ################################################################################
 ################################################################################
 def check_var(text):
     text = text.split("@", 1)
@@ -1004,15 +1067,15 @@ for instruction in program:
                 
 instruction_list = sorted(code, key=lambda x: int(x.attrib["order"]))
 
+list=[]
+for num in instruction_list:
+    if num.attrib["order"] not in list:
+        list.append(num.attrib["order"])
+    else:
+        print("opakovana order hodnota")
+        sys.exit(32)
 
 
-
-
-print(len(instruction_list))
-
-# instruction in instruction_list:
-#    opcode = instruction.attrib["opcode"].upper()
-    #print(opcode)
 i = 0
 while i < len(instruction_list):
     instruction = instruction_list[i]
@@ -1075,6 +1138,10 @@ while i < len(instruction_list):
     elif opcode == "JUMP":
         i = jump_func(instruction)
         continue
+    elif opcode == "JUMPIFEQ":
+        jumpifeq_func(instruction)
+    elif opcode == "JUMPIFNEQ":
+        jumpifneq_fun(instruction)
     i=i+1
     
         
