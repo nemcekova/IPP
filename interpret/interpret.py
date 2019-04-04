@@ -559,14 +559,57 @@ def stri2int_func(instruction):
         i = int(instruction[2].text) 
            
     if typ_string != "string" or typ_int != "int":
-        print("hehe")
         sys.exit(32)
     else:
         if len(string) -1 < i:
             sys.exit(58)
         else:
             char = string[i]
+            save_here[0] = "int"
             save_here[1] = ord(char)
+            
+################################################################################
+def pushs_func(instruction):
+    if (instruction[0].attrib["type"] == "var"):
+        found = look_for_var(instruction[0].text)
+        data = found[1]
+    else:
+        data = instruction[0].text
+        
+    global Stack
+    Stack.append(data)
+################################################################################
+def pops_func(instruction):
+    save_here = look_for_var(instruction[0].text)
+    global Stack
+    lenght = len(Stack)
+    if lenght > 0:
+        save_here[1] = Stack[lenght-1]
+        Stack.pop()
+        
+        if re.match('^[+-]{0,1}[0-9]+$', save_here[1]):
+            save_here[0] = "int"
+        elif re.match('^(true|false)$', save_here[1]):
+            save_here[0] = "bool"
+        else:
+            save_here[0] = "string"
+################################################################################
+def label_func(instruction):
+    name = instruction[0].text
+    global Labels
+    if name in Labels:
+        sys.exit(52)
+    else:
+        Labels[name] = instruction.attrib["order"]
+        return
+################################################################################
+def jump_func(instruction):
+    jump_to = instruction[0].text
+    global Labels
+    if jump_to in Labels:
+        return(int(Labels[jump_to]))
+    else:
+        sys.exit(52)
 ################################################################################
 ################################################################################
 def check_var(text):
@@ -807,7 +850,7 @@ def syntax_analysis(instruction):
                 sys.exit(32)
             else:
                 if instruction[0].attrib["type"] in ["var", "int", "string", "bool", "nil"]:
-                    check_symbol(instruction[1].attrib["type"], instruction[1].text)
+                    check_symbol(instruction[0].attrib["type"], instruction[0].text)
                 else:
                     sys.exit(32)
                     
@@ -928,9 +971,16 @@ if (len(sys.argv) > 1):
         print("-----------HELP-------------")
         sys.exit(0)
 else:
-    parse_file = sys.stdin.read()                
-                
+    parse_file = sys.stdin.read()     
+    
+               
+GF={}
+TF=None
+LF=[]
+Stack=[]
+Labels={}                
 string = ""
+
 for line in parse_file:
     string += line
 #print(string)
@@ -947,19 +997,25 @@ code = []
 #syntax analysis
 for instruction in program:
     syntax_analysis(instruction)
+    #print(instruction.attrib["opcode"].upper)
+    if instruction.attrib["opcode"].upper() == "LABEL":
+        label_func(instruction)
     code.append(instruction)
                 
 instruction_list = sorted(code, key=lambda x: int(x.attrib["order"]))
 
 
 
-GF={}
-TF=None
-LF=[]
 
 
+print(len(instruction_list))
 
-for instruction in instruction_list:
+# instruction in instruction_list:
+#    opcode = instruction.attrib["opcode"].upper()
+    #print(opcode)
+i = 0
+while i < len(instruction_list):
+    instruction = instruction_list[i]
     opcode = instruction.attrib["opcode"].upper()
     print(opcode)
     
@@ -1009,10 +1065,26 @@ for instruction in instruction_list:
         int2char_func(instruction)
     elif opcode == "STRI2INT":
         stri2int_func(instruction)
+    elif opcode == "PUSHS":
+        pushs_func(instruction)
+    elif opcode == "POPS":
+        pops_func(instruction)
+    elif opcode == "LABEL":
+        #label_func(instruction)
+        pass
+    elif opcode == "JUMP":
+        i = jump_func(instruction)
+        continue
+    i=i+1
+    
         
 print("LF:")
 print(LF)
 print("TF:")
 print(TF)  
 print("GF:") 
-print(GF)           
+print(GF)  
+print("Stack")  
+print(Stack)
+print("Labels")     
+print(Labels)  
