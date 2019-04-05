@@ -1,8 +1,8 @@
 #
-#@proj Parser for IPPcode19
-#@file parse.php
+#@proj Interpret for IPPcode19
+#@file interpret.py
 #@author Barbora Nemčeková <xnemce06@stud.fit.vutbr.cz>
-#@date 24.03.2019
+#@date 30.03.2019
 #
 import sys
 import xml.etree.ElementTree as ET
@@ -23,15 +23,19 @@ def pushframe_func():
     if(LF == ""):
         LF.append(TF)
     else:
-        LF = []
+        #LF = []
         LF.append(TF)
     TF = None    
 
 ################################################################################
 #function pops from local frame    
 def popframe_func():
-    global LF
-    LF.pop()
+    global LF, TF
+    if len(LF) == 0:
+        sys.exit((55))
+    else:
+        TF = LF[len(LF)-1]
+        LF.pop()
 
 ################################################################################    
 #function for definition of variable    
@@ -47,7 +51,6 @@ def defvar_func(instruction):
     elif (var_frame == "TF"):
         #CREATEFRAME should be called before using TF variable
         if(TF == None):
-            print("TF nie je definovane - nebol createframe")
             sys.exit(55)
         else:
             TF[var_name] = [instruction[0].attrib["type"], instruction[0].text]
@@ -58,7 +61,6 @@ def defvar_func(instruction):
             LF[-1][var_name] = [instruction[0].attrib["type"], instruction[0].text]
         
         else:
-            print("Nebol pushnuty ziadny frame")
             sys.exit(55)
 
 ################################################################################            
@@ -91,6 +93,7 @@ def look_for_var(var):
     split_var = var.split("@", 1)
     frame = split_var[0]
     name = split_var[1]
+    global LF, TF, GF
     
     if (frame == "GF"):
         if (GF.get(name)):
@@ -105,12 +108,12 @@ def look_for_var(var):
         else:
             sys.exit(54)
     elif (frame == "LF"):
-        for i in LF:        
-            if (i.get(name)):
-                ret_var = i.get(name)
-                return(ret_var)
-            else:
-                sys.exit(54) 
+        #for i in LF:        
+        if (LF[-1].get(name)):
+            ret_var = LF[-1].get(name)
+            return(ret_var)
+        else:
+            sys.exit(54) 
                 
 ################################################################################
 #function for ADD instruction
@@ -439,7 +442,6 @@ def type_func(instruction):
     else:
         type = instruction[1].attrib["type"]
         
-    print(type)
     save_here[0] = "type"
     if type == "var":
         save_here[1] = ""
@@ -576,16 +578,16 @@ def pushs_func(instruction):
     else:
         data = instruction[0].text
         
-    global Stack
-    Stack.append(data)
+    global Stack_data
+    Stack_data.append(data)
 ################################################################################
 def pops_func(instruction):
     save_here = look_for_var(instruction[0].text)
-    global Stack
-    lenght = len(Stack)
+    global Stack_data
+    lenght = len(Stack_data)
     if lenght > 0:
-        save_here[1] = Stack[lenght-1]
-        Stack.pop()
+        save_here[1] = Stack_data[lenght-1]
+        Stack_data.pop()
         
         if re.match('^[+-]{0,1}[0-9]+$', save_here[1]):
             save_here[0] = "int"
@@ -635,9 +637,9 @@ def jumpifeq_func(instruction):
         sys.exit(53)
     else:
         if data1 == data2:
-            global i, Labels
+            global counter, Labels
             if jump_to in Labels:
-                i = int(Labels[jump_to])
+                counter= int(Labels[jump_to])
             else:
                 sys.exit(52)
         else:
@@ -666,14 +668,45 @@ def jumpifneq_fun(instruction):
         sys.exit(53)
     else:
         if data1 != data2:
-            global i, Labels
+            global counter, Labels
             if jump_to in Labels:
-                i = int(Labels[jump_to])
+                counter= int(Labels[jump_to])
             else:
                 sys.exit(52)
         else:
             return 
- ################################################################################
+################################################################################
+def call_func(instruction):
+    jump_to = instruction[0].text
+    
+    global Stack_label, counter, Labels
+    Stack_label.append(int(instruction.attrib["order"]))
+    
+    if jump_to in Labels:
+        counter = int(Labels[jump_to])-1
+
+################################################################################
+def return_func():
+    global counter, Stack_label
+    if Stack_label == []:
+        return
+    else:
+        counter = Stack_label[len(Stack_label)-1]-1
+        Stack_label.pop()
+
+################################################################################
+def break_func(instruction):
+    global GF, LF, TF, inst_cnt
+    glob_f = str(GF)
+    local_f = str(LF)
+    temp_f = str(TF)
+    cnt = str(inst_cnt)
+    print("instruction order: " + instruction.attrib["order"], file=sys.stderr)
+    print("GF" + glob_f, file=sys.stderr )
+    print("LF" + local_f, file=sys.stderr )
+    print("TF" + temp_f, file=sys.stderr)
+    print("Number of executed instructions: " + cnt, file=sys.stderr)
+################################################################################
 ################################################################################
 def check_var(text):
     text = text.split("@", 1)
@@ -738,6 +771,14 @@ def check_symbol(type, text):
             sys.exit(32)
     elif type == "string":
         if(re.match('^([^\ \\\\#]|\\\\[0-9]{3})*$', text)):
+            print(text)
+            if(re.match('(\\\\[0-9]{3})', text)):
+                sub_str = text.split('\\',1)
+                num = sub_str[0:3]
+                print(num)
+                text = re.sub('\\\\[0-9]{3}', )
+            else:
+                print(":(")
             return
         else:
             sys.exit(32)
@@ -848,7 +889,6 @@ def syntax_analysis(instruction):
                 if instruction[1].attrib["type"] in ["var", "int", "string", "bool", "nil"]:
                     check_symbol(instruction[1].attrib["type"], instruction[1].text)
                 else:
-                    print("552")
                     sys.exit(32)
             #check third argument        
             if "type" not in instruction[2].attrib:
@@ -1040,7 +1080,8 @@ else:
 GF={}
 TF=None
 LF=[]
-Stack=[]
+Stack_data=[]
+Stack_label=[]
 Labels={}                
 string = ""
 
@@ -1060,7 +1101,6 @@ code = []
 #syntax analysis
 for instruction in program:
     syntax_analysis(instruction)
-    #print(instruction.attrib["opcode"].upper)
     if instruction.attrib["opcode"].upper() == "LABEL":
         label_func(instruction)
     code.append(instruction)
@@ -1072,16 +1112,17 @@ for num in instruction_list:
     if num.attrib["order"] not in list:
         list.append(num.attrib["order"])
     else:
-        print("opakovana order hodnota")
         sys.exit(32)
 
 
-i = 0
-while i < len(instruction_list):
-    instruction = instruction_list[i]
+counter= 0
+inst_cnt = 0
+while counter< len(instruction_list):
+    instruction = instruction_list[counter]
     opcode = instruction.attrib["opcode"].upper()
-    print(opcode)
+
     
+    inst_cnt += 1 
     if opcode == "CREATEFRAME":
         createframe_func()    
     elif opcode == "PUSHFRAME":
@@ -1136,22 +1177,28 @@ while i < len(instruction_list):
         #label_func(instruction)
         pass
     elif opcode == "JUMP":
-        i = jump_func(instruction)
+        counter= jump_func(instruction)
         continue
     elif opcode == "JUMPIFEQ":
         jumpifeq_func(instruction)
     elif opcode == "JUMPIFNEQ":
         jumpifneq_fun(instruction)
-    i=i+1
+    elif opcode == "CALL":
+        call_func(instruction)
+        continue
+        #pass
+    elif opcode == "RETURN":
+        return_func()
+        #continue
+        pass
+    elif opcode == "BREAK":
+        break_func(instruction)
+    counter=counter+1
     
-        
-print("LF:")
+print("GF")
+print(GF)
+print("LF")
 print(LF)
-print("TF:")
-print(TF)  
-print("GF:") 
-print(GF)  
-print("Stack")  
-print(Stack)
-print("Labels")     
-print(Labels)  
+print("TF")
+print(TF)
+
