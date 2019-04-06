@@ -761,35 +761,41 @@ def check_symbol(type, text):
     if type ==  "var":
         text = text.split("@", 1)
         if (re.match('^([a-zA-Z]|[\_\-\$\&\%\*\!\?])([a-zA-Z0-9]|[\_\-\$\&\%\*\!\?])+$', text[1])):
-            return
+            return(text)
         else:
             sys.exit(32)
     elif type == "int":
         if(re.match('^[+-]{0,1}[0-9]+$', text)):
-            return
+            return(text)
         else:
             sys.exit(32)
+            
     elif type == "string":
         if(re.match('^([^\ \\\\#]|\\\\[0-9]{3})*$', text)):
-            print(text)
-            if(re.match('(\\\\[0-9]{3})', text)):
-                sub_str = text.split('\\',1)
-                num = sub_str[0:3]
-                print(num)
-                text = re.sub('\\\\[0-9]{3}', )
+            if re.findall('\\\\[0-9]{3}', text):
+                i = 0
+                while i < len(text):
+                    if text[i] == "\\":
+                        num = text[i+1:i+4]
+                        char = chr(int(num))
+                        text = text.replace(num, char)
+                        i=i+2
+                    else:
+                        i=i+1
+                replaced = text.replace('\\','')
+                return(replaced)
             else:
-                print(":(")
-            return
+                return(text)
         else:
             sys.exit(32)
     elif type == "bool":
         if(re.match('^(true|false)$', text)):
-            return
+            return(text)
         else:
             sys.exit(32)
     elif type == "nil":
         if(re.match('^nil$', text)):
-            return
+            return(text)
         else:
             sys.exit(32)
             
@@ -887,7 +893,7 @@ def syntax_analysis(instruction):
                 sys.exit(32)  
             else:  
                 if instruction[1].attrib["type"] in ["var", "int", "string", "bool", "nil"]:
-                    check_symbol(instruction[1].attrib["type"], instruction[1].text)
+                    instruction[1].text = check_symbol(instruction[1].attrib["type"], instruction[1].text)
                 else:
                     sys.exit(32)
             #check third argument        
@@ -895,7 +901,7 @@ def syntax_analysis(instruction):
                 sys.exit(32)
             else:    
                 if instruction[2].attrib["type"] in ["var", "int", "string", "bool", "nil"]:
-                    check_symbol(instruction[2].attrib["type"], instruction[2].text)
+                    instruction[2].text = check_symbol(instruction[2].attrib["type"], instruction[2].text)
                 else:
                     sys.exit(32)
                     
@@ -915,7 +921,7 @@ def syntax_analysis(instruction):
                 sys.exit(32)
             else:
                 if instruction[1].attrib["type"] in ["var", "int", "string", "bool", "nil"]:
-                    check_symbol(instruction[1].attrib["type"], instruction[1].text)
+                    instruction[1].text = check_symbol(instruction[1].attrib["type"], instruction[1].text)
                 else:
                     sys.exit(32)
                     
@@ -953,7 +959,7 @@ def syntax_analysis(instruction):
                 sys.exit(32)
             else:
                 if instruction[0].attrib["type"] in ["var", "int", "string", "bool", "nil"]:
-                    check_symbol(instruction[0].attrib["type"], instruction[0].text)
+                    instruction[0].text = check_symbol(instruction[0].attrib["type"], instruction[0].text)
                 else:
                     sys.exit(32)
                     
@@ -995,7 +1001,7 @@ def syntax_analysis(instruction):
                 sys.exit(32)  
             else:  
                 if instruction[1].attrib["type"] in ["var", "int", "string", "bool", "nil"]:
-                    check_symbol(instruction[1].attrib["type"], instruction[1].text)
+                    instruction[1].text = check_symbol(instruction[1].attrib["type"], instruction[1].text)
                 else:
                     sys.exit(32)
             #check third argument        
@@ -1003,7 +1009,7 @@ def syntax_analysis(instruction):
                 sys.exit(32)
             else:    
                 if instruction[2].attrib["type"] in ["var", "int", "string", "bool", "nil"]:
-                    check_symbol(instruction[2].attrib["type"], instruction[1].text)
+                    instruction[1].text = check_symbol(instruction[2].attrib["type"], instruction[1].text)
                 else:
                     sys.exit(32)
 
