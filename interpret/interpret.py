@@ -93,6 +93,7 @@ def look_for_var(var):
     split_var = var.split("@", 1)
     frame = split_var[0]
     name = split_var[1]
+
     global LF, TF, GF
     
     if (frame == "GF"):
@@ -114,6 +115,7 @@ def look_for_var(var):
             return(ret_var)
         else:
             sys.exit(54) 
+
                 
 ################################################################################
 #function for ADD instruction
@@ -484,10 +486,11 @@ def write_func(instruction):
     else:
         msg = instruction[0].text
     
-    print(msg, end=" ")
+    print(msg, end="")
 
 ################################################################################
 def read_func(instruction, from_file):
+
     save_here = look_for_var(instruction[0].text)
     typ = instruction[1].text
     
@@ -710,7 +713,7 @@ def break_func(instruction):
 ################################################################################
 def check_var(text):
     text = text.split("@", 1)
-    if (re.match('^([a-zA-Z]|[\_\-\$\&\%\*\!\?])([a-zA-Z0-9]|[\_\-\$\&\%\*\!\?])+$', text[1])):
+    if (re.match('^([a-zA-Z]|[\_\-\$\&\%\*\!\?])([a-zA-Z0-9]|[\_\-\$\&\%\*\!\?])*$', text[1])):
         return
     
     else:
@@ -757,20 +760,20 @@ def check_type(text):
     else:
         sys.exit
 ################################################################################
-def check_symbol(type, text):
-    if type ==  "var":
-        text = text.split("@", 1)
-        if (re.match('^([a-zA-Z]|[\_\-\$\&\%\*\!\?])([a-zA-Z0-9]|[\_\-\$\&\%\*\!\?])+$', text[1])):
+def check_symbol(typ, text):
+    if typ ==  "var":
+        var_name = text.split("@", 1)
+        if (re.match('^([a-zA-Z]|[\_\-\$\&\%\*\!\?])([a-zA-Z0-9]|[\_\-\$\&\%\*\!\?])*$', var_name[1])):
             return(text)
         else:
             sys.exit(32)
-    elif type == "int":
+    elif typ == "int":
         if(re.match('^[+-]{0,1}[0-9]+$', text)):
             return(text)
         else:
             sys.exit(32)
             
-    elif type == "string":
+    elif typ == "string":
         if(re.match('^([^\ \\\\#]|\\\\[0-9]{3})*$', text)):
             if re.findall('\\\\[0-9]{3}', text):
                 i = 0
@@ -778,7 +781,7 @@ def check_symbol(type, text):
                     if text[i] == "\\":
                         num = text[i+1:i+4]
                         char = chr(int(num))
-                        text = text.replace(num, char)
+                        text = text.replace(num, char, 1)
                         i=i+2
                     else:
                         i=i+1
@@ -788,12 +791,12 @@ def check_symbol(type, text):
                 return(text)
         else:
             sys.exit(32)
-    elif type == "bool":
+    elif typ == "bool":
         if(re.match('^(true|false)$', text)):
             return(text)
         else:
             sys.exit(32)
-    elif type == "nil":
+    elif typ == "nil":
         if(re.match('^nil$', text)):
             return(text)
         else:
@@ -979,7 +982,7 @@ def syntax_analysis(instruction):
             if "type" not in instruction[0].attrib:
                 sys.exit(32)
             else:
-                if instruction[1].attribute["type"] in ["type"]:
+                if instruction[1].attrib["type"] in ["type"]:
                     check_type(instruction[1].text)
                 else:
                     sys.exit(32)
@@ -1201,10 +1204,10 @@ while counter< len(instruction_list):
         break_func(instruction)
     counter=counter+1
     
-print("GF")
-print(GF)
-print("LF")
-print(LF)
-print("TF")
-print(TF)
+#print("GF")
+#print(GF)
+#print("LF")
+#print(LF)
+#print("TF")
+#print(TF)
 
