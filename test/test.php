@@ -15,6 +15,9 @@ $recursive = false;
 $failed_tests = 0;
 $succ_tests = 0;
 $overal_tests = 0;
+$print_ok = "";
+$print_err_ret = "";
+$print_err_out = "";
 
 echo "<!DOCTYPE HTML>";
 	echo "<html>";
@@ -125,7 +128,7 @@ function Directory($path){
 
 
 function run_test($path, $test_name){
-    global $parse_file, $int_file, $only_int, $only_parse, $failed_tests, $succ_tests, $overal_tests;
+    global $parse_file, $int_file, $only_int, $only_parse, $failed_tests, $succ_tests, $overal_tests, $print_ok, $print_err_ret, $print_err_out;
     $in = false;
     $out = false;
     $rc = false;
@@ -172,11 +175,10 @@ function run_test($path, $test_name){
             *FAILED
             */
             $failed_tests += 1;
-			echo"<table >
+			$print_err_ret .="
 			    	  <tr>
-			          <td>" . $test_name . ": </td><td>FAILED</td><td>Incorrect return value</td>
-			          </tr>
-				</table>";
+			          <td>" . $test_name . "</td><br>
+			          </tr>";
         }
         else{
             exec('java -jar /pub/courses/ipp/jexamxml/jexamxml.jar ./xml ' . $path . "/" . $test_name . 'out /pub/courses/ipp/jexamxml/options', $out, $return_var);
@@ -185,6 +187,10 @@ function run_test($path, $test_name){
                 *FAILED
                 */
                 //print("failed\n");
+				$print_err_out.= "
+				    	  <tr>
+				          <td>" . $test_name . "/td><br>
+				          </tr>";
                 $failed_tests += 1;
             }
             else{
@@ -193,17 +199,16 @@ function run_test($path, $test_name){
                 */
                 //print("ok\n");
                 $succ_tests += 1;
-				echo"<table >
+				$print_ok .= "
 				    	  <tr>
-				          <td>" . $test_name . ": </td><td>OK</td>
-				          </tr>
-					</table>";
+				          <td>" . $test_name . "<td><br>
+				          </tr>";
             }
         }
     }
     
     elseif ($only_int === true) {
-        exec('python3.6 ' . $int_file . ' --source=' . $path . "/" . $test_name . 'src < ' . $path . "/" . $test_name . 'in > ./output', $out, $return_var);
+        exec('python3.6 ' . $int_file . ' --source=' . $path . "/" . $test_name . 'src --input=' . $path . "/" . $test_name . 'in > ./output', $out, $return_var);
         $rc = exec('cat ' . $path . "/" . $test_name . 'rc');
         $overal_tests +=1;
         if($rc != $return_var){
@@ -211,11 +216,10 @@ function run_test($path, $test_name){
             *FAILED
             */
             $failed_tests += 1;
-			echo"<table >
+			$print_err_ret .="
 			    	  <tr>
-			          <td>" . $test_name . ": </td><td>FAILED</td><td>Incorrect return value</td>
-			          </tr>
-				</table>";
+			          <td>" . $test_name . "</td><br>
+			          </tr>";
             //print("$rc\n");
             //print("$return_var\n");
         }
@@ -227,17 +231,22 @@ function run_test($path, $test_name){
                 */
                 $failed_tests += 1;
                 //print("falied\n");
+				$print_err_out .="
+				    	  <tr>
+				          <td>" . $test_name . "</td><br>
+				          </tr>
+					";
+					
             }
             else{
                 /*
                 *OK
                 */
                 $succ_tests +=1;
-				echo"<table >
-				    	  <tr>
-				          <td>" . $test_name . ": </td><td>OK</td>
-				          </tr>
-					</table>";
+				$print_ok .="
+							
+				          <td>" . $test_name . " </td><br>
+				        ";
                 //print("ok\n");
             }
         }
@@ -255,7 +264,7 @@ function run_test($path, $test_name){
                 /*
                 *FAILD
                 */
-                $failed_tests += 1;
+                #$failed_tests += 1;
                 //print("Failed parse\n");
             }
             //if it does match tests are correct
@@ -277,11 +286,11 @@ function run_test($path, $test_name){
             *FAILED
             */
             $failed_tests += 1;
-			echo"<table >
+			$print_err_ret .="
 			    	  <tr>
-			          <td>" . $test_name . ": </td><td>FAILED</td><td>Incorrect return value " . $return_var ."</td>
-			          </tr>
-				</table>";
+			          <td>" . $test_name . ": </td><br>
+			          </tr>";
+			
             //print("faled test interpret wrong value\n");
         }
         else{
@@ -291,29 +300,40 @@ function run_test($path, $test_name){
                 *FAILED
                 */
                 $failed_tests += 1;
+				$print_err_out .="
+				    	  <tr>
+				          <td>" . $test_name . "</td><br>
+				          </tr>";
             }
+			else{
             //print("preslo to ok\n");
             $succ_tests += 1;
             /*
             *OK
             */
-			echo"<table >
+			$print_ok .="
 			    	  <tr>
-			          <td>" . $test_name . ": </td><td>OK</td>
-			          </tr>
-				</table>";
+			          <td>" . $test_name . ": </td><br>
+			          </tr>";
         }
-            
+	}    
     }
     
     
 }
     
-    
-	echo"<div class=\"Summary\">
-		<h3>Summary</h3>
+    if($print_ok == ""){
+		$print_ok = "-";
+	}
+	if($print_err_out == ""){
+		$print_err_out = "-";
+	}
+	if($print_err_ret == ""){
+		$print_err_ret = "-";
+	}
+	echo"
+		<h2>Summary</h2>
 		<table >
-		<font size=\"30\" color=\"black\">
 		    	  <tr>
 		          <td>Executed tests:</td><td>" . $overal_tests . "</td>
 		          </tr>
@@ -322,11 +342,20 @@ function run_test($path, $test_name){
 		          </tr>
 		          <tr>
 		             <td>Failed:</td><td>$failed_tests</td>
-		           </tr>  
-			</font>         
+		           </tr>         
 	        </table>
-	</div>";
+			
+		<h3>Detail</h3>
+		<h4>Failed tests: Incorrect return valeu</h4>
+		$print_err_ret
+		<h4>Failed tests: Incorrect output</h4>
+		$print_err_out
+		<h4>Successfull tests</h4>
+		$print_ok";
+			
+			
 	echo "</body>";
     echo "</html>";
+	//echo($print_ok);
 //function 
 ?>
