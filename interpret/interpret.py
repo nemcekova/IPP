@@ -20,6 +20,8 @@ def createframe_func():
 #push temporary frame into local frame    
 def pushframe_func():
     global LF, TF
+    if TF == None:
+        sys.exit(55)
     if(LF == ""):
         LF.append(TF)
     else:
@@ -103,12 +105,17 @@ def look_for_var(var):
         else:
             sys.exit(54)
     elif (frame == "TF"):
+        if(TF == None):
+            sys.exit(55)
+        
         if (TF.get(name)):
             ret_var = TF.get(name)
             return(ret_var)
         else:
             sys.exit(54)
     elif (frame == "LF"):
+        if len(LF) == 0:
+            sys.exit(55)
         #for i in LF:        
         if (LF[-1].get(name)):
             ret_var = LF[-1].get(name)
@@ -223,7 +230,18 @@ def compare_func(instruction, opcode):
         compare2 = instruction[2].text
     
     #EQ can compare different types
-    if (type1 != type2 and opcode != "EQ"):
+    if (type1 =="nil" or type2 == "nil"):
+        if opcode == "EQ":
+            total = compare1 == compare2
+            sum[0] = "bool"
+            if total == False:
+                sum[1] = "false"
+            else:
+                sum[1] = "true"
+            return
+        else:
+            sys.exit(53)
+    elif(type1 != type2):
         sys.exit(53)
         
         
@@ -235,15 +253,24 @@ def compare_func(instruction, opcode):
     if (opcode == "LT"):
         total = compare1 < compare2
         sum[0] = "bool"
-        sum[1] = total
+        if total == False:
+            sum[1] = "false"
+        else:
+            sum[1] = "true"
     elif (opcode == "GT"):
         total = compare1 > compare2
         sum[0] = "bool"
-        sum[1] = total
+        if total == False:
+            sum[1] = "false"
+        else:
+            sum[1] = "true"
     elif (opcode == "EQ"):
         total = compare1 == compare2
         sum[0] = "bool"
-        sum[1] = total
+        if total == False:
+            sum[1] = "false"
+        else:
+            sum[1] = "true"
 
 ################################################################################    
 def logical_func(instruction, opcode):
@@ -322,6 +349,8 @@ def getchar_func(instruction):
         var1 = instruction[1].text
         var_found1 = look_for_var(var1)
         type1 = var_found1[0]
+        if type1 == "var":
+            sys.exit(56)
         string = var_found1[1]
         
     else:
@@ -332,13 +361,17 @@ def getchar_func(instruction):
         var2 = instruction[2].text
         var_found2 = look_for_var(var2)
         type2 = var_found2[0]
+        if type2 == "var":
+            sys.exit(56)
+        if type2 != "int":
+            sys.exit(53)
         index = int(var_found2[1])
         
     else:
         type2 = instruction[2].attrib["type"]
         index = int(instruction[2].text)
         
-    if (type1 != "string" and type2 != "int"):
+    if (type1 != "string"):
         sys.exit(53)
         
     max_index = len(string)
@@ -353,38 +386,50 @@ def getchar_func(instruction):
 def setchar_func(instruction):
     save_here = instruction[0].text
     string_change = look_for_var(save_here)
-    
-    if (instruction[1].attrib["type"] == "var"):
-        var1 = instruction[1].text
-        var_found1 = look_for_var(var1)
-        type1 = var_found1[0]
-        symbol = var_found1[1]
-        
-    else:
-        type1 = instruction[1].attrib["type"]
-        symbol = instruction[1].text
+    if string_change[0] != "string":
+        sys.exit(53)
     
     if (instruction[2].attrib["type"] == "var"):
-        var2 = instruction[2].text
+        var1 = instruction[2].text
+        var_found1 = look_for_var(var1)
+        type1 = var_found1[0]
+        if type1 != "string":
+            sys.exit(53)
+        symbol = var_found1[1]
+        if symbol == "" or symbol == None:
+            sys.exit(58)
+        
+    else:
+        type1 = instruction[2].attrib["type"]
+        symbol = instruction[2].text
+        if symbol == "" or symbol == None:
+            sys.exit(58)
+    
+    if (instruction[1].attrib["type"] == "var"):
+        var2 = instruction[1].text
         var_found2 = look_for_var(var2)
         type2 = var_found2[0]
+        if type2 != "int":
+            sys.exit(53)
         index = int(var_found2[1])
         
     else:
-        type2 = instruction[2].attrib["type"]
-        index = int(instruction[2].text)
+        type2 = instruction[1].attrib["type"]
+        index = int(instruction[1].text)
          
     
     if((len(string_change[1]) -1 ) < index):
         sys.exit(58)
         
+       
     if(len(symbol) > 1):
         symbol = symbol[0]
     
-    string = list(string_change[1])
-    string[index] = symbol
+    string = string_change[1]
+    str_list = list(string)
+    str_list[index] = symbol
     
-    string_change[1] = "".join(string)
+    string_change[1] = "".join(str_list)
     
 ################################################################################
 def concat_func(instruction):
@@ -411,6 +456,8 @@ def concat_func(instruction):
         type2 = instruction[2].attrib["type"]
         string2 = instruction[2].text
         
+    if type1 == "var" or type2 == "var":
+        sys.exit(56)    
     if(type1 != "string" or type2 != "string"):
         sys.exit(53)
     
@@ -424,12 +471,25 @@ def strlen_func(instruction):
     if (instruction[1].attrib["type"] == "var"):
         var1 = instruction[1].text
         var_found1 = look_for_var(var1)
+        if var_found1[0] == "var":
+            sys.exit(56)
+        if var_found1[0] != "string":
+            sys.exit(53)
+            
         string = var_found1[1]
+        if string == "" or string == None:
+            lenght[0] = "int"
+            lenght[1] = 0
+            return
         
     else:
         string = instruction[1].text
-        
+        if string == "" or string == None:
+            lenght[0] = "int"
+            lenght[1] = 0
+            return
 
+    
     lenght[0] = "int"
     lenght[1] = len(string)
     
@@ -440,11 +500,13 @@ def type_func(instruction):
     if (instruction[1].attrib["type"] == "var"):
         var_found = look_for_var(instruction[1].text)
         type = var_found[0]
+        if type == "var":
+            sys.exit(56)
     
     else:
         type = instruction[1].attrib["type"]
         
-    save_here[0] = "type"
+    save_here[0] = "string"
     if type == "var":
         save_here[1] = ""
     else:
@@ -454,6 +516,8 @@ def exit_func(instruction):
     if (instruction[0].attrib["type"] == "var"):
         var = look_for_var(instruction[0].text)
         type = var[0]
+        if type == "var":
+            sys.exit(56)
         if type != "int":
             sys.exit(53)
         exit_code = int(var[1])
@@ -482,10 +546,17 @@ def dprint_func(instruction):
 def write_func(instruction):
     if (instruction[0].attrib["type"] == "var"):
         var = look_for_var(instruction[0].text)
+        if var[0] == "var":
+            sys.exit(56)
+        typ = var[0]
         msg = var[1]
     else:
+        typ = instruction[0].attrib["type"]
         msg = instruction[0].text
     
+    
+    if msg == "nil" and typ == "nil":
+        msg = ""
     print(msg, end="")
 
 ################################################################################
@@ -493,6 +564,8 @@ def read_func(instruction, from_file):
 
     save_here = look_for_var(instruction[0].text)
     typ = instruction[1].text
+    if typ == "nil":
+        sys.exit(32)
     
     if from_file == True:
         global read_file
@@ -511,6 +584,18 @@ def read_func(instruction, from_file):
             save_here[1] = "0"
     elif typ == "string":
         if (re.match('^([^\ \\\\#]|\\\\[0-9]{3})*$', line)):
+            if re.findall('\\\\[0-9]{3}', line):
+                i = 0
+                while i < len(line):
+                    if line[i] == "\\":
+                        num = line[i+1:i+4]
+                        char = chr(int(num))
+                        line = line.replace(num, char, 1)
+                        i=i+2
+                    else:
+                        i=i+1
+                replaced = line.replace('\\','')
+                save_here[1] = replaced
             save_here[0] = "string"
         else:
             save_here[0] = "string"
@@ -537,7 +622,7 @@ def int2char_func(instruction):
     if typ != "int":
         sys.exit(53)
     else:
-        if number > 65533:
+        if number > 65533 or number < 0:
             sys.exit(58)
         else:
             save_here[0] = "string"
@@ -548,6 +633,8 @@ def stri2int_func(instruction):
     if (instruction[1].attrib["type"] == "var"):
         var_found = look_for_var(instruction[1].text)
         typ_string = var_found[0]
+        if typ_string != "string":
+            sys.exit(53)
         string = var_found[1]
     
     else:
@@ -557,26 +644,28 @@ def stri2int_func(instruction):
     if (instruction[2].attrib["type"] == "var"):
         var = look_for_var(instruction[2].text)
         typ_int = var[0]
+        if typ_int != "int":
+            sys.exit(53)
         i = int(var[1])
     
     else:
         typ_int = instruction[2].attrib["type"]
         i = int(instruction[2].text) 
            
-    if typ_string != "string" or typ_int != "int":
-        sys.exit(32)
+    
+    if len(string) -1 < i:
+        sys.exit(58)
     else:
-        if len(string) -1 < i:
-            sys.exit(58)
-        else:
-            char = string[i]
-            save_here[0] = "int"
-            save_here[1] = ord(char)
+        char = string[i]
+        save_here[0] = "int"
+        save_here[1] = ord(char)
             
 ################################################################################
 def pushs_func(instruction):
     if (instruction[0].attrib["type"] == "var"):
         found = look_for_var(instruction[0].text)
+        if found[0] ==  "var":
+            sys.exit(56)
         data = found[1]
     else:
         data = instruction[0].text
@@ -598,6 +687,8 @@ def pops_func(instruction):
             save_here[0] = "bool"
         else:
             save_here[0] = "string"
+    else:
+        sys.exit(56)
 ################################################################################
 def label_func(instruction):
     name = instruction[0].text
@@ -619,7 +710,6 @@ def jump_func(instruction):
 ################################################################################
 def jumpifeq_func(instruction):
     jump_to = instruction[0].text
-    
     if (instruction[1].attrib["type"] == "var"):
         var_found = look_for_var(instruction[1].text)
         typ1 = var_found[0]
@@ -646,6 +736,7 @@ def jumpifeq_func(instruction):
             else:
                 sys.exit(52)
         else:
+            
             return
 ################################################################################
 def jumpifneq_fun(instruction):
@@ -687,12 +778,14 @@ def call_func(instruction):
     
     if jump_to in Labels:
         counter = int(Labels[jump_to])-1
+    else:
+        sys.exit(52)
 
 ################################################################################
 def return_func():
     global counter, Stack_label
     if Stack_label == []:
-        return
+        sys.exit(56)
     else:
         counter = Stack_label[len(Stack_label)-1]-1
         Stack_label.pop()
@@ -811,10 +904,10 @@ def change_arg_order(instruction):
         #arg2, arg1
         if instruction[0].tag > instruction[1].tag:
             instruction[0], instruction[1] = instruction[1], instruction[0]
-            if instruction[0].tag != "arg1" and instruction[1].tag != "arg2":
+            if instruction[0].tag != "arg1" or instruction[1].tag != "arg2":
                 sys.exit(32)
         else:
-            if instruction[0].tag != "arg1" and instruction[1].tag != "arg2":
+            if instruction[0].tag != "arg1" or instruction[1].tag != "arg2":
                 sys.exit(32)
             else:
                 return
@@ -870,6 +963,8 @@ def syntax_analysis(instruction):
             sys.exit(32)
         if "opcode" not in instruction.attrib:
             sys.exit(32)
+        if len(instruction.attrib) > 2:
+            sys.exit(32)        
             
         change_arg_order(instruction)       
         code = instruction.attrib["opcode"]
@@ -880,50 +975,78 @@ def syntax_analysis(instruction):
                 sys.exit(32)
         
         #instructions with 3 arguments: var, symb, symb
-        elif code in ["AND", "SUB", "MUL", "IDIV", "LT", "GT", "EQ", "AND", "OR", "NOT", "STRI2INT", "CONCAT", "GETCHAR", "SETCHAR"]:
+        elif code in ["ADD", "SUB", "MUL", "IDIV", "LT", "GT", "EQ", "AND", "OR", "STRI2INT", "CONCAT", "GETCHAR", "SETCHAR"]:
             if len(instruction) != 3:
                 sys.exit(32)
-            #check firts argument
+        #check firts argument
+            if len(instruction[0].attrib) != 1:
+                sys.exit(32)
             if "type" not in instruction[0].attrib:
                 sys.exit(32) 
+            if instruction[0].attrib["type"].islower() == False:
+                sys.exit(32)
+        
             else:       
                 if instruction[0].attrib["type"] != "var":
                     sys.exit(32)
                 else:
                     check_var(instruction[0].text)
-            #check second argument        
+            #check second argument   
+            if len(instruction[1].attrib) != 1:
+                sys.exit(32)     
             if "type" not in instruction[1].attrib:
                 sys.exit(32)  
+            if instruction[1].attrib["type"].islower() == False:
+                sys.exit(32)
             else:  
                 if instruction[1].attrib["type"] in ["var", "int", "string", "bool", "nil"]:
+                    if not instruction[1].text and instruction[1].attrib["type"] == "string":
+                        instruction[1].text = ""
                     instruction[1].text = check_symbol(instruction[1].attrib["type"], instruction[1].text)
                 else:
                     sys.exit(32)
-            #check third argument        
+            #check third argument 
+            if len(instruction[2].attrib) != 1:
+                sys.exit(32)       
             if "type" not in instruction[2].attrib:
+                sys.exit(32)
+            if instruction[2].attrib["type"].islower() == False:
                 sys.exit(32)
             else:    
                 if instruction[2].attrib["type"] in ["var", "int", "string", "bool", "nil"]:
+                    if not instruction[2].text and instruction[2].attrib["type"] == "string":
+                        instruction[2].text = ""
                     instruction[2].text = check_symbol(instruction[2].attrib["type"], instruction[2].text)
                 else:
                     sys.exit(32)
                     
         #instructions with 2 arguments: var, symb
-        elif code in ["MOVE", "INT2CHAR", "STRLEN", "TYPE"]:
+        elif code in ["MOVE", "INT2CHAR", "STRLEN", "TYPE", "NOT"]:
+            
             if len(instruction) != 2:
                 sys.exit(32)
             #check first argument
+            if len(instruction[0].attrib) != 1:
+                sys.exit(32)
             if "type" not in instruction[0].attrib:
                 sys.exit(32)
-                if instruction[0].attrib["type"] != "var":
-                    sys.exit(32)
-                else:
-                    check_var(instruction[0].text)
+            if instruction[0].attrib["type"] != "var":
+                sys.exit(32)
+            if instruction[0].attrib["type"].islower() == False:
+                sys.exit(32)
+            else:
+                check_var(instruction[0].text)
             #check second argument
+            if len(instruction[1].attrib) != 1:
+                sys.exit(32)
             if "type" not in instruction[1].attrib:
+                sys.exit(32)
+            if instruction[1].attrib["type"].islower() == False:
                 sys.exit(32)
             else:
                 if instruction[1].attrib["type"] in ["var", "int", "string", "bool", "nil"]:
+                    if not instruction[1].text and instruction[1].attrib["type"] == "string":
+                        instruction[1].text = ""
                     instruction[1].text = check_symbol(instruction[1].attrib["type"], instruction[1].text)
                 else:
                     sys.exit(32)
@@ -933,7 +1056,12 @@ def syntax_analysis(instruction):
             if len(instruction) != 1:
                 sys.exit(32)
                 
+            if len(instruction[0].attrib) != 1:
+                sys.exit(32)
+            
             if "type" not in instruction[0].attrib:
+                sys.exit(32)
+            if instruction[0].attrib["type"].islower() == False:
                 sys.exit(32)
             else:
                 if instruction[0].attrib["type"] != "var":
@@ -945,7 +1073,12 @@ def syntax_analysis(instruction):
             if len(instruction) != 1:
                 sys.exit(32)
             
+            if len(instruction[0].attrib) != 1:
+                sys.exit(32)
+        
             if "type" not in instruction[0].attrib:
+                sys.exit(32)
+            if instruction[0].attrib["type"].islower() == False:
                 sys.exit(32)
             else:
                 if instruction[0].attrib["type"] == "label":
@@ -957,11 +1090,19 @@ def syntax_analysis(instruction):
         elif code in ["PUSHS", "WRITE", "EXIT", "DPRINT"]:
             if len(instruction) != 1:
                 sys.exit(32)
+            
+            if len(instruction[0].attrib) != 1:
+                sys.exit(32)
                 
             if "type" not in instruction[0].attrib:
                 sys.exit(32)
+            if instruction[0].attrib["type"].islower() == False:
+            
+                sys.exit(32)
             else:
                 if instruction[0].attrib["type"] in ["var", "int", "string", "bool", "nil"]:
+                    if not instruction[0].text and instruction[0].attrib["type"] == "string":
+                        instruction[0].text = ""
                     instruction[0].text = check_symbol(instruction[0].attrib["type"], instruction[0].text)
                 else:
                     sys.exit(32)
@@ -970,8 +1111,14 @@ def syntax_analysis(instruction):
         elif code in ["READ"]:
             if len(instruction) != 2:
                 sys.exit(32)
-                #check firts argument    
+                #check firts argument  
+                
+            if len(instruction[0].attrib) != 1:
+                sys.exit(32)    
+                  
             if "type" not in instruction[0].attrib:
+                sys.exit(32)
+            if instruction[0].attrib["type"].islower() == False:
                 sys.exit(32)
             else:
                 if instruction[0].attrib["type"] in ["var"]:
@@ -979,7 +1126,13 @@ def syntax_analysis(instruction):
                 else:
                     sys.exit(32)
                 #check second argument
-            if "type" not in instruction[0].attrib:
+                
+            if len(instruction[1].attrib) != 1:
+                sys.exit(32)    
+                
+            if "type" not in instruction[1].attrib:
+                sys.exit(32)
+            if instruction[1].attrib["type"].islower() == False:
                 sys.exit(32)
             else:
                 if instruction[1].attrib["type"] in ["type"]:
@@ -991,8 +1144,13 @@ def syntax_analysis(instruction):
         elif code in ["JUMPIFEQ", "JUMPIFNEQ"]:
             if len(instruction) != 3:
                 sys.exit(32)
-            #check firts argument    
+            #check firts argument   
+            if len(instruction[0].attrib) != 1:
+                sys.exit(32)
+             
             if "type" not in instruction[0].attrib:
+                sys.exit(32)
+            if instruction[0].attrib["type"].islower() == False:
                 sys.exit(32)
             else:
                 if instruction[0].attrib["type"] == "label":
@@ -1000,35 +1158,57 @@ def syntax_analysis(instruction):
                 else:
                     sys.exit(32)
             #check second argument
+            
+            if len(instruction[1].attrib) != 1:
+                sys.exit(32)
+                
             if "type" not in instruction[1].attrib:
-                sys.exit(32)  
+                sys.exit(32) 
+            if instruction[1].attrib["type"].islower() == False:
+                sys.exit(32) 
             else:  
                 if instruction[1].attrib["type"] in ["var", "int", "string", "bool", "nil"]:
+                    if not instruction[1].text and instruction[1].attrib["type"] == "string":
+                        instruction[1].text = ""
                     instruction[1].text = check_symbol(instruction[1].attrib["type"], instruction[1].text)
                 else:
                     sys.exit(32)
-            #check third argument        
+            #check third argument  
+            if len(instruction[2].attrib) != 1:
+                sys.exit(32)
+                  
             if "type" not in instruction[2].attrib:
+                sys.exit(32)
+            if instruction[2].attrib["type"].islower() == False:
                 sys.exit(32)
             else:    
                 if instruction[2].attrib["type"] in ["var", "int", "string", "bool", "nil"]:
+                    if not instruction[2].text and instruction[2].attrib["type"] == "string":
+                        instruction[2].text = ""
                     instruction[1].text = check_symbol(instruction[2].attrib["type"], instruction[1].text)
                 else:
                     sys.exit(32)
+        else:
+            #print("aaaaaaaaaaaaaaaa")
+            sys.exit(32)
 
 ################################################################################
 #function check header attributes
 def header(attribute):
-    if "language" in attribute and "name" in attribute and "description" in attribute:
-        return
-    elif "language" in attribute and "name" in attribute:
-        return
-    elif "language" in attribute and "description" in attribute:
-        return
-    elif "language" in attribute:
-        return
-    else: 
+
+    if len(attribute) > 3:
         sys.exit(32)
+    if "language" in attribute:
+        if attribute["language"] != "IPPcode19":
+            sys.exit(32)
+    else:
+        sys.exit(32)
+    if len(attribute) == 2:
+        if "description" not in attribute and "name" not in attribute:
+            sys.exit(32)
+    if len(attribute) == 3:
+        if "description" not in attribute and "name" not in attribute:
+            sys.exit(32)
         
         
 ################################################################################
@@ -1116,11 +1296,12 @@ for instruction in program:
                 
 instruction_list = sorted(code, key=lambda x: int(x.attrib["order"]))
 
-list=[]
+order_list=[]
 for num in instruction_list:
-    if num.attrib["order"] not in list:
-        list.append(num.attrib["order"])
+    if num.attrib["order"] not in order_list:
+        order_list.append(num.attrib["order"])
     else:
+        
         sys.exit(32)
 
 
@@ -1190,8 +1371,10 @@ while counter< len(instruction_list):
         continue
     elif opcode == "JUMPIFEQ":
         jumpifeq_func(instruction)
+        continue
     elif opcode == "JUMPIFNEQ":
         jumpifneq_fun(instruction)
+        continue
     elif opcode == "CALL":
         call_func(instruction)
         continue
